@@ -1,0 +1,41 @@
+# Forward-looking .gitignore for the InsuranceOps AI project. No implementation files exist yet; this enumerates paths Phase 1+ will produce.
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editor and OS cruft
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Build outputs
+build/
+dist/
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Environment files (keep .env.example if it ever appears)
+.env
+.env.local
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Local agent task tracking state (planner and coder scratch space). Not part of the product.
+.agents/
