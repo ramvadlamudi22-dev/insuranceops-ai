@@ -157,12 +157,9 @@ the search space is the full 256 bits of the token, so a slow KDF adds no meanin
 while inflating the per-request verification cost. The pepper prevents offline rainbow attacks
 against a dumped table.
 
-Note on consistency: [SYSTEM_ARCHITECTURE.md section 19.2](./SYSTEM_ARCHITECTURE.md) mentions
-argon2id as a candidate storage scheme during early drafting.
-This document (SECURITY_REVIEW.md) is the authoritative source for the storage scheme,
-and the choice is `sha256(pepper || plaintext)` with the reasoning above.
-SYSTEM_ARCHITECTURE.md will be reconciled in a Phase 1 follow-up if the discrepancy materializes in code review;
-it is noted here to prevent drift.
+Note on consistency: All Phase 0 design documents now use `sha256(pepper || plaintext)`
+as the API-key storage scheme, consistent with this document's authoritative decision.
+The reconciliation was completed during the Phase 0 semantic normalization pass.
 
 Each `api_keys` row carries:
 

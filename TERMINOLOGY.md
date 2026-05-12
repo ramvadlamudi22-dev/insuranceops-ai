@@ -45,9 +45,14 @@ for the absent `prev_event_hash`:
 ```
 event_hash = sha256(
     audit_event_id || workflow_run_id || actor || event_type ||
-    canonical_json(event_payload) || occurred_at_iso || b''
+    canonical_json(event_payload) || occurred_at_iso || coalesce(prev_event_hash, b'')
 )
 ```
+
+Note: Other documents use the shorthand `sha256(prev_event_hash || canonical_payload)`
+to describe the hash chain linkage. This shorthand means "prev_event_hash is an input
+to the hash computation" and does not specify concatenation order. The formula above
+(from SYSTEM_ARCHITECTURE.md section 16.2) is the canonical byte-ordering specification.
 
 A 32-byte-zero sentinel is NOT used. The field is nullable, not sentinel-valued.
 
@@ -191,6 +196,8 @@ Authoritative documents: SYSTEM_ARCHITECTURE.md section 5 (entity IDs), OBSERVAB
 ## Actor-String Format
 
 The canonical Actor-string format is `<kind>:<subkind>:<id>`.
+For service identities that are singleton per process type, the `<id>` segment is omitted
+(e.g., `worker:extractor`, `api:control_plane`).
 
 ### Canonical actor kinds
 
