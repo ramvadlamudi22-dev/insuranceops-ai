@@ -142,12 +142,12 @@ context at request start), the following fields are also present:
 When a log line is emitted inside a Step handler (the worker binds the context when
 it claims a Task and unbinds on ACK or DLQ), the following fields are also present:
 
-- `workflow_run_id`: uuid v7, the identifier of the WorkflowRun.
+- `workflow_run_id`: uuid v4, the identifier of the WorkflowRun.
 - `workflow_name`: canonical name, e.g. `claim_intake_v1`.
 - `workflow_version`: the pinned version string attached to the WorkflowRun.
-- `step_id`: uuid v7 of the Step.
+- `step_id`: uuid v4 of the Step.
 - `step_name`: canonical step name, e.g. `extract`, `validate`, `route`.
-- `step_attempt_id`: uuid v7 of the current StepAttempt.
+- `step_attempt_id`: uuid v4 of the current StepAttempt.
 - `step_attempt_number`: integer, the 1-based attempt counter.
 
 ### Context binding
