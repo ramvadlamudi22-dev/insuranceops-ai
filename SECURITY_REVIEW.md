@@ -59,7 +59,7 @@ and the Mitigation shipped in Phase 1 or named for a later phase with the phase 
 | Threat | Asset | Vector | Mitigation |
 | --- | --- | --- | --- |
 | Spoofed API client using a stolen API key | Document bytes, WorkflowRun state, EscalationCase queue | Token leak through a developer laptop, a committed secret, or a compromised HTTP client | API keys are 256-bit random tokens, stored as `sha256(pepper \|\| token)` in `api_keys.hashed_token`; plaintext visible only at creation; manual rotation by operator in Phase 1 via SQL update on `api_keys.enabled`; Phase 2 admin endpoint for rotation and Phase 2 Redis-backed short-TTL allowlist to let revocation propagate within seconds |
-| Tampered AuditEvent to hide an operator action | AuditEvent chain, compliance evidence | Direct SQL modification, backup restore mismatch, operator with DB credentials | Per-workflow hash chain (see [SYSTEM_ARCHITECTURE.md section 16](./SYSTEM_ARCHITECTURE.md)); verifier script (Phase 2) walks `audit_events WHERE workflow_run_id = ?` by `occurred_at` and reports the first `current_event_hash != sha256(prev_event_hash \|\| canonical_payload)` row; `audit_events` table has REVOKE UPDATE, REVOKE DELETE for the app DB role (Phase 1); database role separation (`app_rw`, `app_audit_writer`, `migrator`) so the app-runtime role cannot mutate existing audit rows |
+| Tampered AuditEvent to hide an operator action | AuditEvent chain, compliance evidence | Direct SQL modification, backup restore mismatch, operator with DB credentials | Per-workflow hash chain (see [SYSTEM_ARCHITECTURE.md section 16](./SYSTEM_ARCHITECTURE.md)); verifier script (Phase 2) walks `audit_events WHERE workflow_run_id = ?` by `occurred_at` and reports the first `event_hash != sha256(prev_event_hash \|\| canonical_payload)` row; `audit_events` table has REVOKE UPDATE, REVOKE DELETE for the app DB role (Phase 1); database role separation (`app_rw`, `app_audit_writer`, `migrator`) so the app-runtime role cannot mutate existing audit rows |
 | Repudiation by an operator of an escalation action | EscalationCase resolution trail | Operator claims "I never resolved that case" | Every resolve, reject, claim, and cancel emits an AuditEvent with `actor = user:<role>:<user_id>`, `correlation_id`, and the resolution payload hash; AuditEvent is signed by its position in the hash chain and is non-updatable; session cookie or API key that produced the call is recorded alongside the actor |
 | Information disclosure of PII through logs or responses | SSN, DOB, policy_number, claimant_name, address, phone, email, medical codes carried in Documents | Accidental log of a field name, stack trace that includes a payload, error response that echoes input | structlog processor `redact_pii` strips or SHA-256-hashes fields by exact name before emit; response serializers for PII-bearing models have a role-gated field filter; raw document bytes are NEVER logged; error handlers return an opaque `error_id` and log the detail server-side |
 | Information disclosure of Document bytes through the object layer | Raw PDF and image bytes | Path traversal on the Phase 1 local filesystem backend, world-readable bind mount, backup exfiltration | Phase 1 stores Document bytes under a single configured directory with a content-hash filename (`<sha256>.<ext>`); no user-supplied path component; directory permissions 0700, owned by the app user; Phase 2 encrypts-at-rest via application-layer Fernet with a KMS-wrapped key and document bytes move to an object store with signed short-TTL read URLs |
@@ -119,7 +119,7 @@ Capability on rows, role on columns. Values are `allow` or `deny`. There is no "
 | Claim EscalationCase (`POST /v1/escalations/{id}/claim`) | allow | allow | deny |
 | Resolve EscalationCase (`POST /v1/escalations/{id}/resolve`) | allow | allow | deny |
 | Reject EscalationCase (`POST /v1/escalations/{id}/reject`) | allow | allow | deny |
-| Cancel WorkflowRun (Phase 2 endpoint) | deny | allow | deny |
+| Cancel WorkflowRun (`POST /v1/workflow-runs/{id}/cancel`) | deny | allow | deny |
 | Requeue DLQ entry (Phase 2 endpoint) | deny | allow | deny |
 | Manage api_keys (Phase 2 endpoint) | deny | allow | deny |
 | Manage users (Phase 2 endpoint) | deny | allow | deny |
@@ -157,12 +157,9 @@ the search space is the full 256 bits of the token, so a slow KDF adds no meanin
 while inflating the per-request verification cost. The pepper prevents offline rainbow attacks
 against a dumped table.
 
-Note on consistency: [SYSTEM_ARCHITECTURE.md section 19.2](./SYSTEM_ARCHITECTURE.md) mentions
-argon2id as a candidate storage scheme during early drafting.
-This document (SECURITY_REVIEW.md) is the authoritative source for the storage scheme,
-and the choice is `sha256(pepper || plaintext)` with the reasoning above.
-SYSTEM_ARCHITECTURE.md will be reconciled in a Phase 1 follow-up if the discrepancy materializes in code review;
-it is noted here to prevent drift.
+Note on consistency: All Phase 0 design documents now use `sha256(pepper || plaintext)`
+as the API-key storage scheme, consistent with this document's authoritative decision.
+The reconciliation was completed during the Phase 0 semantic normalization pass.
 
 Each `api_keys` row carries:
 
@@ -399,10 +396,10 @@ verified by a CI test that asserts the expected grants.
 
 A verifier script (Phase 2 deliverable) walks the chain for a given `workflow_run_id`:
 
-1. Select all rows WHERE workflow_run_id = ? ORDER BY occurred_at, audit_event_id.
+1. Select all rows WHERE workflow_run_id = ? ORDER BY occurred_at, seq_in_run.
 2. For each row, recompute `expected_current_hash = sha256(prev_event_hash || canonical_payload)`.
-3. Assert `row.current_event_hash == expected_current_hash` and
-   `row.prev_event_hash == previous_row.current_event_hash`.
+3. Assert `row.event_hash == expected_current_hash` and
+   `row.prev_event_hash == previous_row.event_hash`.
 4. On mismatch, report the first broken link: the `audit_event_id`, the expected hash,
    the actual hash, and the occurred_at.
 
@@ -422,7 +419,7 @@ with `actor`, the run id, and the timestamp. Exports are themselves audited.
 
 Every authenticated API call emits a structured log line at INFO level with:
 
-- `actor` (e.g., `api_key:ops_service_a`, `user:operator:42`).
+- `actor` (e.g., `api_key:operator:a1b2c3d4`, `user:operator:42`).
 - `route` (the matched FastAPI route path, not the raw URL, to avoid cardinality on path params).
 - `method`, `status`, `duration_ms`.
 - `correlation_id`.

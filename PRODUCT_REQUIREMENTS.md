@@ -315,7 +315,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 - **FR-AUTH-003**: Every authenticated action records the Actor derived from the API key
   into AuditEvents.
   Acceptance test: AuditEvents for actions performed by an `operator` key
-  carry an Actor of the form `user:operator:<key_id>`.
+  carry an Actor of the form `api_key:operator:<api_key_id>`.
 - **FR-AUTH-004**: Health and readiness endpoints do not require authentication.
   Acceptance test: `GET /healthz` and `GET /readyz` without an API key
   return their respective non-401 responses.
@@ -342,7 +342,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 
 - **NFR-PERF-001**: `POST /v1/documents` has p95 latency under 300 ms
   at 50 requests per second sustained on a single API pod.
-  Acceptance test: the `http_request_duration_seconds{route="POST /v1/documents"}`
+  Acceptance test: the `api_request_duration_seconds{route="POST /v1/documents"}`
   histogram reports p95 under 300 ms for the last 10 minutes under load.
 - **NFR-PERF-002**: `GET /v1/workflow-runs/{id}` has p95 latency under 150 ms
   at 100 requests per second sustained.
@@ -388,7 +388,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 - **NFR-SECURITY-001**: All API traffic is served over TLS in any non-local environment.
   Acceptance test: the staging deploy rejects HTTP connections with a redirect
   or refusal, verified by an automated probe.
-- **NFR-SECURITY-002**: API keys are hashed at rest (Argon2id)
+- **NFR-SECURITY-002**: API keys are hashed at rest using sha256(pepper || token)
   and compared in constant time.
   Acceptance test: inspecting the `api_keys` table shows only hash values;
   a timing-attack unit test on the comparison function passes.

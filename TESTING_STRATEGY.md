@@ -263,7 +263,7 @@ fake's host to the allowlist in the fixture, which is a visible change on review
 Tests do not assume that a row written at time T1 appears before a row written at
 time T2 just because the test code wrote them in that order. The platform's ordering
 invariants are expressed as explicit columns (`occurred_at`, `created_at`,
-`chain_position`), and tests assert on those columns rather than on insertion order.
+`seq_in_run`), and tests assert on those columns rather than on insertion order.
 
 ### No filesystem outside `tmp_path`
 
@@ -545,12 +545,13 @@ transitions and their expected audit row shape.
 - **Setup.** Drive a complete happy-path WorkflowRun with several Steps and
   multiple retries.
 - **Action.** Read every `audit_events` row for this `workflow_run_id` ordered by
-  `occurred_at`, `chain_position`.
-- **Assertion.** For each event after the first, `current_event_hash` equals
-  `sha256(prev_event_hash || canonical_payload_bytes)`. The first event has a
-  sentinel `prev_event_hash` (32 zero bytes) and a `current_event_hash` equal to
-  `sha256(sentinel || canonical_payload_bytes)`. The last event's
-  `current_event_hash` is stored as the run's terminal chain-head in
+  `occurred_at`, `seq_in_run`.
+- **Assertion.** For each event after the first, `event_hash` equals
+  `sha256(prev_event_hash || canonical_payload_bytes)`. The first event has
+  `prev_event_hash` = NULL and an `event_hash` equal to
+  `sha256(canonical_payload_bytes)` (with empty bytes substituted for the absent
+  prev_event_hash in the hash input). The last event's
+  `event_hash` is stored as the run's terminal chain-head in
   `workflow_runs.last_audit_hash` (if the schema exports that) or is
   recomputable from the stream.
 
@@ -562,8 +563,8 @@ transitions and their expected audit row shape.
   UPDATE revoked on `audit_events`), modify the middle event's `payload` field by
   a single byte. Run the verifier over the run's event stream.
 - **Assertion.** The verifier reports a mismatch at the tampered event's
-  `chain_position` and does not report mismatches at earlier positions. The
-  verifier's output includes `workflow_run_id`, `tampered_chain_position`, the
+  `seq_in_run` and does not report mismatches at earlier positions. The
+  verifier's output includes `workflow_run_id`, `tampered_seq_in_run`, the
   expected hash, and the observed hash.
 - **Further assertion.** The verifier detects tampering whether the change is in
   `payload`, `actor`, `event_type`, `occurred_at`, or `prev_event_hash`. A test
@@ -577,10 +578,10 @@ transitions and their expected audit row shape.
   fails. Only the `audit_writer` role (used only by the code path that appends
   events) has INSERT.
 
-### Completeness: no gap in chain_position
+### Completeness: no gap in seq_in_run
 
 - **Setup.** Drive a WorkflowRun with N state transitions.
-- **Assertion.** `audit_events.chain_position` for this `workflow_run_id` is a
+- **Assertion.** `audit_events.seq_in_run` for this `workflow_run_id` is a
   contiguous sequence from 1 to N with no gaps. A gap indicates a lost event and
   is a chain integrity bug.
 

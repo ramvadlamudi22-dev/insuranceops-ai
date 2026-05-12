@@ -750,6 +750,7 @@ One row per WorkflowRun.
 | created_at        | timestamptz  | NOT NULL, DEFAULT now()                                                                                                     | UTC timestamp of creation.                                            |
 | updated_at        | timestamptz  | NOT NULL, DEFAULT now()                                                                                                     | Last row update timestamp; maintained by application.                 |
 | deadline_at       | timestamptz  | NOT NULL                                                                                                                    | Absolute deadline; reaper transitions to failed if exceeded.          |
+| reference_data_snapshot_id | uuid         | NULL                                                                                                                        | Pinned reference-data snapshot for this run; set at creation, immutable thereafter. See section 11.5. |
 | created_by        | text         | NOT NULL                                                                                                                    | Actor string that created the run.                                    |
 | last_error_code   | text         | NULL                                                                                                                        | Populated on transitions to `failed`.                                  |
 | last_error_detail | text         | NULL                                                                                                                        | Human-readable detail for the most recent terminal failure.           |
@@ -1332,7 +1333,7 @@ Clients that need to tell the two cases apart may inspect the status code.
 
 The endpoint enforces three hard limits at the boundary:
 
-- Maximum payload size is 25 MiB per Document at Phase 1.
+- Maximum payload size is 20 MiB per Document at Phase 1.
   Requests exceeding this return `413 Payload Too Large` without persisting anything.
 - Content type must match a whitelist: `application/pdf`, `image/png`, `image/jpeg`,
   `image/tiff`, `text/plain`, `text/csv`, `application/json`.
@@ -2211,7 +2212,7 @@ Writes happen inside the same transaction as the state change they describe.
 |---------------------|-------------|------------------------------------------------------------------------------|
 | audit_event_id      | uuid (v7)   | Time-sortable primary key.                                                   |
 | workflow_run_id     | uuid        | The run this event belongs to.                                               |
-| actor               | text        | Canonical actor string: `worker:extractor`, `user:analyst:42`, `system:reaper`.|
+| actor               | text        | Canonical actor string: `worker:extractor`, `user:analyst:42`, `worker:reaper`.|
 | event_type          | text        | Snake_case event name, stable, versioned per payload schema.                 |
 | event_payload       | jsonb       | Structured payload, schema per event_type, validated on write.               |
 | occurred_at         | timestamptz | UTC wall-clock at event emission, from Postgres `now()`.                     |
@@ -2322,6 +2323,8 @@ The surface is exactly the one declared in SPEC and context:
 | POST   | `/v1/workflow-runs`                         | API key     | Start a new WorkflowRun against one or more Documents. |
 | GET    | `/v1/workflow-runs/{workflow_run_id}`       | API key     | Read WorkflowRun status.                        |
 | GET    | `/v1/workflow-runs/{workflow_run_id}/events`| API key     | Read the AuditEvent timeline for a run.         |
+| POST   | `/v1/workflow-runs/{workflow_run_id}/cancel` | API key     | Cancel a WorkflowRun in `running` or `awaiting_human` state (supervisor only). |
+| GET    | `/v1/documents/{document_id}/content`       | API key     | Fetch raw Document bytes (operator and supervisor only).  |
 | GET    | `/v1/escalations`                           | session or key | List EscalationCases with filters.          |
 | POST   | `/v1/escalations/{escalation_id}/claim`     | session or key | Claim a case.                               |
 | POST   | `/v1/escalations/{escalation_id}/resolve`   | session or key | Resolve a claimed case (override or approve). |
@@ -2366,6 +2369,19 @@ Shapes are Pydantic v2 models in code; they are described here in prose.
 - Response: `{events: [...], next_cursor?: string}`.
   Each event includes `audit_event_id`, `event_type`, `actor`, `occurred_at`, and `event_payload`.
 - Errors: 401, 404.
+
+`POST /v1/workflow-runs/{workflow_run_id}/cancel`:
+
+- Request: `{reason?, notes?}`.
+- Response: `{workflow_run_id, state: 'cancelled', cancelled_at, cancelled_by}`.
+- Errors: 401, 403 (not supervisor), 404, 409 (run not in a cancellable state).
+
+`GET /v1/documents/{document_id}/content`:
+
+- Request: none (document_id in path).
+- Response: raw bytes with `Content-Type` matching the Document's `content_type`.
+  `Content-Disposition: attachment; filename="{document_id}.{ext}"`.
+- Errors: 401, 403 (viewer denied), 404, 410 (payload retired).
 
 `GET /v1/escalations`:
 
@@ -2485,15 +2501,16 @@ the wrapper's no-op mode is explicit and tested.
 
 Prometheus text on `/metrics` with the following initial set:
 
-- `http_requests_total{method,path,status}`: counter.
-- `http_request_duration_seconds{method,path,status}`: histogram with standard buckets.
-- `workflow_runs_total{workflow_name,terminal_state}`: counter.
-- `workflow_run_duration_seconds{workflow_name,terminal_state}`: histogram.
-- `step_attempts_total{workflow_name,step_name,state}`: counter.
+- `api_requests_total{route,method,status}`: counter.
+- `api_request_duration_seconds{route,method}`: histogram with standard buckets.
+- `workflow_runs_started_total{workflow_name,workflow_version}`: counter.
+- `workflow_runs_completed_total{workflow_name,workflow_version,terminal_state}`: counter.
+- `workflow_run_duration_seconds{workflow_name,workflow_version,terminal_state}`: histogram.
+- `step_attempts_total{workflow_name,step_name,outcome}`: counter.
 - `step_attempt_duration_seconds{workflow_name,step_name}`: histogram.
-- `queue_depth{queue_name}`: gauge (ready, inflight sum, delayed, dlq).
-- `escalation_cases_total{workflow_name,terminal_state}`: counter.
-- `escalation_case_age_seconds{workflow_name,state}`: histogram, bucketed to capture SLA classes.
+- `queue_depth{queue}`: gauge (ready, inflight, delayed, dlq).
+- `escalations_opened_total{workflow_name,step_name}`: counter.
+- `escalation_open_age_seconds{workflow_name}`: histogram, bucketed to capture SLA classes.
 - `audit_chain_mismatches_total`: counter, should be always zero in healthy operation.
 
 ### 18.4 Probes
@@ -2528,7 +2545,7 @@ and is part of the authentication contract, not a middleware afterthought.
 Phase 1 supports two authenticators:
 
 - **API key** in `Authorization: Bearer <token>` for machine clients.
-  Keys are stored hashed (argon2id) in `api_keys.hashed_token`;
+  Keys are stored as `sha256(pepper || token)` in `api_keys.hashed_token`;
   the plaintext is visible only at creation time.
 - **Signed session cookie** for the narrow internal operator UI if one is built in Phase 3.
   The cookie is signed with an application secret, includes the user id and role,
@@ -3045,7 +3062,7 @@ An ambient scheduler would be reconsidered only for deployment-level tasks
   with enough CPU, memory, and disk for the expected Document volume and audit write rate.
 - Network between API, worker, Postgres, and Redis is low-latency and reliable
   (single host or co-located hosts inside a private network).
-- Document payloads at Phase 1 fit the 25 MiB cap;
+- Document payloads at Phase 1 fit the 20 MiB cap;
   the workloads targeting this platform are claim documents, not bulk archives.
 - The Phase 1 operator count is small (single-digit operators)
   and EscalationCase throughput is measured in cases per day, not cases per second.
