@@ -13,11 +13,13 @@ from insuranceops.workflows.extractors.base import (
 
 # Regex patterns for claim fields
 _PATTERNS: dict[str, re.Pattern[str]] = {
-    "claim_number": re.compile(r"(?:claim|CLM)[#:\s-]*(\w+)", re.IGNORECASE),
-    "policy_number": re.compile(r"(?:policy|POL)[#:\s-]*([A-Z]{2,3}-\d{6,10})", re.IGNORECASE),
-    "claimant_name": re.compile(
-        r"(?:claimant|insured|name)[:\s]+([A-Za-z\s]{2,50})", re.IGNORECASE
+    "claim_number": re.compile(
+        r"(?:claim\s*(?:number|#|no\.?)?|CLM)[#:\s-]+([A-Z0-9][\w-]*)", re.IGNORECASE
     ),
+    "policy_number": re.compile(
+        r"(?:policy\s*(?:number|#|no\.?)?|POL)[#:\s-]*([A-Z]{2,3}-\d{6,10})", re.IGNORECASE
+    ),
+    "claimant_name": re.compile(r"(?:claimant|insured)[:\s]+([A-Za-z ]{2,50})", re.IGNORECASE),
     "date_of_loss": re.compile(
         r"(?:date of loss|DOL|loss date)[:\s]+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})",
         re.IGNORECASE,
