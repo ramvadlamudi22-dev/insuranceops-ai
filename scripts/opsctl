@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""InsuranceOps AI operator CLI tool.
+
+Subcommands:
+    audit verify --workflow-run-id <UUID>
+        Load audit events for the given workflow run and verify the hash chain.
+        Exits 0 on success, 1 on failure.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import sys
+import uuid
+
+
+async def cmd_audit_verify(workflow_run_id: uuid.UUID) -> int:
+    """Verify the audit chain for a workflow run.
+
+    Returns:
+        0 if the chain is valid, 1 otherwise.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from insuranceops.audit.verifier import verify_chain
+    from insuranceops.config import Settings
+
+    settings = Settings()
+    engine = create_async_engine(settings.DATABASE_URL)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    try:
+        async with async_session() as session:
+            result = await verify_chain(session, workflow_run_id)
+
+        if result.is_valid:
+            print(f"PASS: {result.detail}")
+            return 0
+        else:
+            print(f"FAIL: {result.detail}")
+            print(f"  First mismatch at index: {result.first_mismatch_index}")
+            return 1
+    finally:
+        await engine.dispose()
+
+
+def main() -> None:
+    """Parse arguments and dispatch to subcommands."""
+    parser = argparse.ArgumentParser(
+        prog="opsctl",
+        description="InsuranceOps AI operator CLI tool",
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # audit subcommand
+    audit_parser = subparsers.add_parser("audit", help="Audit chain operations")
+    audit_subparsers = audit_parser.add_subparsers(
+        dest="audit_command", help="Audit subcommands"
+    )
+
+    # audit verify
+    verify_parser = audit_subparsers.add_parser(
+        "verify", help="Verify audit chain integrity"
+    )
+    verify_parser.add_argument(
+        "--workflow-run-id",
+        type=uuid.UUID,
+        required=True,
+        help="UUID of the workflow run to verify",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "audit" and args.audit_command == "verify":
+        exit_code = asyncio.run(cmd_audit_verify(args.workflow_run_id))
+        sys.exit(exit_code)
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
