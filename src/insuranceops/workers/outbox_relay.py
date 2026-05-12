@@ -80,7 +80,7 @@ async def _relay_batch(
         try:
             now = datetime.now(timezone.utc)
             repo = OutboxRepository(session)
-            pending = await repo.get_pending(limit=100, now=now)
+            pending = await repo.get_pending(limit=100)
 
             for entry in pending:
                 try:

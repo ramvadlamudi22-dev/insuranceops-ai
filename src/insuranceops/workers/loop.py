@@ -286,17 +286,77 @@ async def _execute_step_handler(
     step_attempt_id: UUID,
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    """Execute the appropriate step handler.
+    """Execute the appropriate step handler via the handler registry.
 
-    In Phase 1, this is a dispatcher stub that will be extended
-    with actual extraction/validation/enrichment logic.
+    Builds a StepContext from the payload and dispatches to the registered
+    handler based on the handler_name field in the task payload.
 
     Returns:
         Dict with 'status' key: 'success', 'fail_retryable', or 'fail_terminal'
     """
-    # Phase 1 stub - handlers will be registered in workflows module
-    # For now, return success for all steps
-    return {
-        "status": "success",
-        "output_ref": None,
-    }
+    from insuranceops.workflows.steps.base import StepContext, StepResult
+    from insuranceops.workflows.steps.handler_registry import get_handler
+
+    handler_name = payload.get("handler_name", step_name)
+
+    # Build StepContext from task payload
+    document_ids_raw = payload.get("document_ids", [])
+    document_ids = [UUID(d) if isinstance(d, str) else d for d in document_ids_raw]
+
+    context = StepContext(
+        workflow_run_id=workflow_run_id,
+        step_id=step_id,
+        step_attempt_id=step_attempt_id,
+        step_name=step_name,
+        workflow_name=payload.get("workflow_name", "unknown"),
+        document_ids=document_ids,
+        correlation_id=payload.get("correlation_id", ""),
+    )
+
+    try:
+        handler = get_handler(handler_name)
+    except KeyError:
+        logger.error("handler_not_found", handler_name=handler_name)
+        return {
+            "status": "fail_terminal",
+            "error_code": "HANDLER_NOT_FOUND",
+            "error_detail": f"No handler registered for '{handler_name}'",
+        }
+
+    try:
+        # Handlers that need a session will get one via their own mechanism;
+        # pass None since the worker session is managed at _process_task level.
+        result: StepResult = await handler.handle(context, None)  # type: ignore[arg-type]
+    except Exception as e:
+        logger.error("handler_exception", handler_name=handler_name, error=str(e))
+        return {
+            "status": "fail_retryable",
+            "error_code": "HANDLER_EXCEPTION",
+            "error_detail": str(e),
+        }
+
+    # Map StepResult to the dict format expected by _process_task
+    if result.status == "succeeded":
+        return {
+            "status": "success",
+            "output_ref": result.output,
+        }
+    elif result.status == "failed_retryable":
+        return {
+            "status": "fail_retryable",
+            "error_code": result.error_code,
+            "error_detail": result.error_detail,
+        }
+    elif result.status == "escalate":
+        return {
+            "status": "fail_terminal",
+            "error_code": result.error_code or "ESCALATION_REQUESTED",
+            "error_detail": result.error_detail,
+        }
+    else:
+        # failed_terminal
+        return {
+            "status": "fail_terminal",
+            "error_code": result.error_code,
+            "error_detail": result.error_detail,
+        }

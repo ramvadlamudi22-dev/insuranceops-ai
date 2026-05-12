@@ -88,7 +88,7 @@ class TestWorkflowRunsAPI:
                 "/v1/workflow-runs",
                 headers={"Authorization": "Bearer test-token"},
                 json={
-                    "workflow_name": "document_processing",
+                    "workflow_name": "claim_intake",
                     "document_ids": [doc_id],
                     "inputs": {},
                 },
@@ -96,7 +96,7 @@ class TestWorkflowRunsAPI:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["workflow_name"] == "document_processing"
+        assert data["workflow_name"] == "claim_intake"
         assert data["state"] == "running"
 
     async def test_create_workflow_run_unknown_workflow(
@@ -154,8 +154,8 @@ class TestWorkflowRunsAPI:
 
         mock_run = MagicMock()
         mock_run.workflow_run_id = run_id
-        mock_run.workflow_name = "document_processing"
-        mock_run.workflow_version = "1.0.0"
+        mock_run.workflow_name = "claim_intake"
+        mock_run.workflow_version = "v1"
         mock_run.state = "running"
         mock_run.version = 1
         mock_run.current_step_id = uuid.uuid4()
@@ -187,7 +187,7 @@ class TestWorkflowRunsAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["state"] == "running"
-        assert data["workflow_name"] == "document_processing"
+        assert data["workflow_name"] == "claim_intake"
 
     async def test_cancel_workflow_run_supervisor_only(
         self, client: AsyncClient
@@ -221,7 +221,7 @@ class TestWorkflowRunsAPI:
         mock_event.audit_event_id = uuid.uuid4()
         mock_event.workflow_run_id = run_id
         mock_event.event_type = "workflow_run.started"
-        mock_event.actor = "system:orchestrator:start"
+        mock_event.actor = "worker:orchestrator"
         mock_event.payload = {}
         mock_event.occurred_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
         mock_event.seq_in_run = 1

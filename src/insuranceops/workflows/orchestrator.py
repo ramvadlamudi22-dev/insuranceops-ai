@@ -303,7 +303,7 @@ class WorkflowOrchestrator:
                 session=session,
                 workflow_run_id=workflow_run.workflow_run_id,
                 event_type="workflow_run.completed",
-                actor="system:orchestrator:advance",
+                actor="worker:orchestrator",
                 payload={
                     "final_step": current_step.step_name,
                 },
@@ -365,7 +365,7 @@ class WorkflowOrchestrator:
             session=session,
             workflow_run_id=workflow_run.workflow_run_id,
             event_type="step.advanced",
-            actor="system:orchestrator:advance",
+            actor="worker:orchestrator",
             payload={
                 "from_step": current_step.step_name,
                 "to_step": next_step.step_name,
@@ -455,7 +455,7 @@ class WorkflowOrchestrator:
                 session=session,
                 workflow_run_id=workflow_run.workflow_run_id,
                 event_type="step_attempt.retry_scheduled",
-                actor="system:orchestrator:retry",
+                actor="worker:orchestrator",
                 payload={
                     "step_name": current_step.step_name,
                     "attempt_number": attempt_count + 1,
@@ -520,7 +520,7 @@ class WorkflowOrchestrator:
                 session=session,
                 workflow_run_id=workflow_run.workflow_run_id,
                 event_type="escalation.created",
-                actor="system:orchestrator:escalate",
+                actor="worker:orchestrator",
                 payload={
                     "escalation_id": str(escalation_id),
                     "step_name": current_step.step_name,
@@ -544,7 +544,7 @@ class WorkflowOrchestrator:
             session=session,
             workflow_run_id=workflow_run.workflow_run_id,
             event_type="workflow_run.failed",
-            actor="system:orchestrator:fail",
+            actor="worker:orchestrator",
             payload={
                 "step_name": current_step.step_name,
                 "error_code": step_result.error_code,
@@ -591,7 +591,7 @@ class WorkflowOrchestrator:
             session=session,
             workflow_run_id=workflow_run.workflow_run_id,
             event_type="escalation.created",
-            actor="system:orchestrator:escalate",
+            actor="worker:orchestrator",
             payload={
                 "escalation_id": str(escalation_id),
                 "step_name": current_step.step_name,

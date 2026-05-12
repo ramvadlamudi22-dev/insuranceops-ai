@@ -29,21 +29,12 @@ from insuranceops.storage.models import (
 )
 from insuranceops.storage.repositories.audit import AuditRepository
 from insuranceops.storage.repositories.workflow_runs import WorkflowRunRepository
+from insuranceops.workflows.registry import registry
+
+# Ensure workflow definitions are registered
+import insuranceops.workflows.definitions  # noqa: F401
 
 router = APIRouter(prefix="/v1/workflow-runs", tags=["workflow-runs"])
-
-# Simple workflow registry for Phase 1 - maps workflow_name to step definitions
-WORKFLOW_REGISTRY: dict[str, dict] = {
-    "document_processing": {
-        "version": "1.0.0",
-        "steps": [
-            {"name": "extract", "max_attempts": 3, "escalate_on_failure": True},
-            {"name": "validate", "max_attempts": 2, "escalate_on_failure": True},
-            {"name": "enrich", "max_attempts": 3, "escalate_on_failure": False},
-        ],
-        "deadline_hours": 24,
-    },
-}
 
 
 @router.post(
@@ -58,18 +49,22 @@ async def create_workflow_run(
     principal: ApiKeyPrincipal = Depends(requires_role("operator", "supervisor")),
 ) -> WorkflowRunResponse:
     """Create a new workflow run with steps, first step attempt, and outbox entry."""
-    # Validate workflow exists
-    workflow_def = WORKFLOW_REGISTRY.get(body.workflow_name)
-    if workflow_def is None:
+    # Validate workflow exists in the proper registry
+    if body.workflow_version:
+        definition = registry.get(body.workflow_name, body.workflow_version)
+    else:
+        definition = registry.get_latest(body.workflow_name)
+
+    if definition is None:
         raise HTTPException(
             status_code=422,
             detail=f"Unknown workflow: {body.workflow_name}",
         )
 
-    workflow_version = body.workflow_version or workflow_def["version"]
+    workflow_version = definition.workflow_version
     now = datetime.now(timezone.utc)
     workflow_run_id = uuid.uuid4()
-    deadline = now + timedelta(hours=workflow_def["deadline_hours"])
+    deadline = now + timedelta(seconds=definition.deadline_seconds)
 
     # Create WorkflowRun
     run_model = WorkflowRunModel(
@@ -93,18 +88,23 @@ async def create_workflow_run(
             attached_at=now,
         ))
 
-    # Create Steps
+    # Create Steps from the workflow definition
     step_models: list[StepModel] = []
-    for idx, step_def in enumerate(workflow_def["steps"]):
+    for step_def in definition.steps:
         step_id = uuid.uuid4()
         step_model = StepModel(
             step_id=step_id,
             workflow_run_id=workflow_run_id,
-            step_name=step_def["name"],
-            step_index=idx,
+            step_name=step_def.step_name,
+            step_index=step_def.step_index,
             state="queued",
-            max_attempts=step_def["max_attempts"],
-            escalate_on_failure=step_def["escalate_on_failure"],
+            max_attempts=step_def.max_attempts,
+            escalate_on_failure=step_def.escalate_on_failure,
+            retry_policy={
+                "base_delay_s": step_def.retry_policy.base_delay_s,
+                "cap_s": step_def.retry_policy.cap_s,
+                "jitter": step_def.retry_policy.jitter,
+            },
             created_at=now,
         )
         session.add(step_model)
@@ -135,9 +135,11 @@ async def create_workflow_run(
         "step_id": str(first_step.step_id),
         "step_attempt_id": str(step_attempt_id),
         "step_name": first_step.step_name,
+        "handler_name": definition.steps[0].handler_name,
         "workflow_name": body.workflow_name,
         "workflow_version": workflow_version,
         "attempt_number": 1,
+        "document_ids": [str(d) for d in body.document_ids],
     }
     outbox_entry = TasksOutboxModel(
         workflow_run_id=workflow_run_id,
@@ -307,7 +309,7 @@ async def cancel_workflow_run(
         raise HTTPException(status_code=404, detail="Workflow run not found")
 
     # Validate that the run is in a cancellable state
-    cancellable_states = {"pending", "running", "awaiting_human"}
+    cancellable_states = {"running", "awaiting_human"}
     if run.state not in cancellable_states:
         raise HTTPException(
             status_code=409,

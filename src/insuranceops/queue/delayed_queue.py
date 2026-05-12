@@ -49,6 +49,9 @@ async def mature_tasks(
 ) -> int:
     """Move tasks that are due from the delayed ZSET to the ready list.
 
+    Uses ZPOPMIN in a loop for atomic removal from the sorted set,
+    preventing duplicate enqueue when multiple schedulers run concurrently.
+
     Args:
         client: Async Redis client.
         now: Current time (tasks with score <= now are mature).
@@ -58,24 +61,22 @@ async def mature_tasks(
         Number of tasks promoted to the ready list.
     """
     max_score = _epoch_ms(now)
-
-    # Fetch mature tasks
-    items: list[bytes] = await client.zrangebyscore(
-        QUEUE_DELAYED, min=0, max=max_score, start=0, num=batch_size
-    )
-
-    if not items:
-        return 0
-
-    # Push each to ready and remove from delayed
     promoted = 0
-    for item in items:
-        # Use pipeline for atomicity per item
-        pipe = client.pipeline(transaction=True)
-        pipe.lpush(QUEUE_READY, item)
-        pipe.zrem(QUEUE_DELAYED, item)
-        results = await pipe.execute()
-        if results[1] > 0:
-            promoted += 1
+
+    while promoted < batch_size:
+        # ZPOPMIN atomically removes the lowest-scored element
+        results = await client.zpopmin(QUEUE_DELAYED, count=1)
+        if not results:
+            break
+
+        item, score = results[0]
+        if score > max_score:
+            # Item is not yet mature; put it back and stop
+            await client.zadd(QUEUE_DELAYED, {item: score})
+            break
+
+        # Push to ready queue
+        await client.lpush(QUEUE_READY, item)
+        promoted += 1
 
     return promoted

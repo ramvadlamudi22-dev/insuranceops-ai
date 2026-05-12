@@ -82,9 +82,7 @@ class TestEscalationsAPI:
                 headers={"Authorization": "Bearer test-token"},
             )
 
-        # Will either succeed or fail depending on DB availability
-        # In a mocked env, the session will go through but may fail on DB query
-        assert response.status_code in (200, 500)
+        assert response.status_code == 200
 
     async def test_claim_escalation_success(self, client: AsyncClient) -> None:
         """Open case becomes claimed on POST claim."""
@@ -116,7 +114,7 @@ class TestEscalationsAPI:
             )
 
         # In a fully mocked environment the DB might not be available
-        assert response.status_code in (200, 404, 409, 500)
+        assert response.status_code in (200, 404, 409)
 
     async def test_claim_already_claimed(self, client: AsyncClient) -> None:
         """Returns 409 for already-claimed escalation."""
@@ -134,7 +132,7 @@ class TestEscalationsAPI:
                 headers={"Authorization": "Bearer test-token"},
             )
 
-        assert response.status_code in (409, 404, 500)
+        assert response.status_code in (409, 404)
 
     async def test_resolve_escalation(self, client: AsyncClient) -> None:
         """Claimed case becomes resolved on resolve."""
@@ -152,7 +150,7 @@ class TestEscalationsAPI:
                 json={"approve": True, "override": {}, "notes": "Approved"},
             )
 
-        assert response.status_code in (200, 404, 409, 500)
+        assert response.status_code in (200, 404, 409)
 
     async def test_reject_escalation(self, client: AsyncClient) -> None:
         """Claimed case becomes rejected on reject."""
@@ -170,7 +168,7 @@ class TestEscalationsAPI:
                 json={"reason_code": "INVALID_DATA", "notes": "Bad claim"},
             )
 
-        assert response.status_code in (200, 404, 409, 500)
+        assert response.status_code in (200, 404, 409)
 
     async def test_viewer_cannot_claim(self, client: AsyncClient) -> None:
         """Viewer role returns 403 on claim attempt."""

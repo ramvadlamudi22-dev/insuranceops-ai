@@ -28,7 +28,7 @@ def _build_chain(count: int) -> list[AuditEvent]:
         event_hash = compute_event_hash(
             audit_event_id=event_id,
             workflow_run_id=run_id,
-            actor="system:orchestrator:test",
+            actor="worker:orchestrator",
             event_type=event_type,
             payload={"seq": i},
             occurred_at=frozen_time,
@@ -39,7 +39,7 @@ def _build_chain(count: int) -> list[AuditEvent]:
             audit_event_id=event_id,
             workflow_run_id=run_id,
             event_type=event_type,
-            actor="system:orchestrator:test",
+            actor="worker:orchestrator",
             payload={"seq": i},
             occurred_at=frozen_time,
             seq_in_run=i + 1,

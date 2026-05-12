@@ -41,7 +41,7 @@ def _run_workflow_and_collect_hashes(
     h = compute_event_hash(
         audit_event_id=event_ids[0],
         workflow_run_id=run_id,
-        actor="system:orchestrator:start",
+        actor="worker:orchestrator",
         event_type="workflow_run.started",
         payload={
             "workflow_name": "claim_intake_v1",
@@ -57,7 +57,7 @@ def _run_workflow_and_collect_hashes(
     h = compute_event_hash(
         audit_event_id=event_ids[1],
         workflow_run_id=run_id,
-        actor="system:orchestrator:advance",
+        actor="worker:orchestrator",
         event_type="step.started",
         payload={"step_name": "extract"},
         occurred_at=frozen_time,
@@ -70,7 +70,7 @@ def _run_workflow_and_collect_hashes(
     h = compute_event_hash(
         audit_event_id=event_ids[2],
         workflow_run_id=run_id,
-        actor="system:orchestrator:advance",
+        actor="worker:orchestrator",
         event_type="step.completed",
         payload={
             "step_name": "extract",
@@ -87,7 +87,7 @@ def _run_workflow_and_collect_hashes(
     h = compute_event_hash(
         audit_event_id=event_ids[3],
         workflow_run_id=run_id,
-        actor="system:orchestrator:advance",
+        actor="worker:orchestrator",
         event_type="step.completed",
         payload={
             "step_name": "validate",
@@ -103,7 +103,7 @@ def _run_workflow_and_collect_hashes(
     h = compute_event_hash(
         audit_event_id=event_ids[4],
         workflow_run_id=run_id,
-        actor="system:orchestrator:advance",
+        actor="worker:orchestrator",
         event_type="workflow_run.completed",
         payload={"final_step": "validate"},
         occurred_at=frozen_time,

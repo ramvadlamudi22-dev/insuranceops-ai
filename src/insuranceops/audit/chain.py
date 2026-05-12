@@ -10,6 +10,8 @@ Within the current transaction:
 
 from __future__ import annotations
 
+import os
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -22,6 +24,39 @@ from insuranceops.domain.audit import compute_event_hash
 from insuranceops.observability.metrics import audit_events_appended_total
 from insuranceops.storage.models import AuditEventModel
 from insuranceops.storage.repositories.audit import AuditRepository
+
+
+def uuid7() -> UUID:
+    """Generate a UUID v7 per RFC 9562.
+
+    Layout (128 bits):
+      - bits  0-47: unix_ts_ms (48-bit unsigned millisecond timestamp)
+      - bits 48-51: ver (0b0111)
+      - bits 52-63: rand_a (12 random bits)
+      - bits 64-65: var (0b10)
+      - bits 66-127: rand_b (62 random bits)
+
+    Returns:
+        A time-sortable UUID version 7.
+    """
+    timestamp_ms = int(time.time() * 1000)
+    rand_bytes = os.urandom(10)  # 80 bits of randomness
+
+    # Build the 128-bit UUID
+    # First 48 bits: timestamp
+    uuid_int = (timestamp_ms & 0xFFFFFFFFFFFF) << 80
+    # Next 4 bits: version = 7
+    uuid_int |= 0x7 << 76
+    # Next 12 bits: rand_a (from first 12 bits of rand_bytes)
+    rand_a = (rand_bytes[0] << 4) | (rand_bytes[1] >> 4)
+    uuid_int |= (rand_a & 0xFFF) << 64
+    # Next 2 bits: variant = 0b10
+    uuid_int |= 0b10 << 62
+    # Next 62 bits: rand_b
+    rand_b = int.from_bytes(rand_bytes[2:], "big") & 0x3FFFFFFFFFFFFFFF
+    uuid_int |= rand_b
+
+    return UUID(int=uuid_int)
 
 
 async def append_audit_event(
@@ -70,7 +105,7 @@ async def append_audit_event(
         prev_event_hash = None
 
     # Generate IDs and timestamp
-    audit_event_id = uuid.uuid4()
+    audit_event_id = uuid7()
     occurred_at = datetime.now(timezone.utc)
 
     # Compute the event hash using the canonical formula

@@ -18,7 +18,7 @@ class TestComputeEventHash:
         kwargs = dict(
             audit_event_id=uuid.UUID("00000000-0000-4000-8000-000000000001"),
             workflow_run_id=uuid.UUID("00000000-0000-4000-8000-000000000010"),
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={"key": "value"},
             occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
@@ -34,7 +34,7 @@ class TestComputeEventHash:
         base = dict(
             audit_event_id=uuid.UUID("00000000-0000-4000-8000-000000000001"),
             workflow_run_id=uuid.UUID("00000000-0000-4000-8000-000000000010"),
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             payload={"key": "value"},
             occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
             prev_event_hash=None,
@@ -48,7 +48,7 @@ class TestComputeEventHash:
         h = compute_event_hash(
             audit_event_id=uuid.UUID("00000000-0000-4000-8000-000000000001"),
             workflow_run_id=uuid.UUID("00000000-0000-4000-8000-000000000010"),
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={},
             occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
@@ -69,7 +69,7 @@ class TestChainLinkage:
         first_hash = compute_event_hash(
             audit_event_id=uuid.UUID("00000000-0000-4000-8000-000000000001"),
             workflow_run_id=run_id,
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={},
             occurred_at=ts,
@@ -79,7 +79,7 @@ class TestChainLinkage:
         second_hash = compute_event_hash(
             audit_event_id=uuid.UUID("00000000-0000-4000-8000-000000000002"),
             workflow_run_id=run_id,
-            actor="system:orchestrator:advance",
+            actor="worker:orchestrator",
             event_type="step.advanced",
             payload={"step": "extract"},
             occurred_at=ts,
@@ -118,7 +118,7 @@ class TestTamperDetection:
         original_hash = compute_event_hash(
             audit_event_id=event_id,
             workflow_run_id=run_id,
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={"data": "original"},
             occurred_at=ts,
@@ -129,7 +129,7 @@ class TestTamperDetection:
         tampered_hash = compute_event_hash(
             audit_event_id=event_id,
             workflow_run_id=run_id,
-            actor="system:orchestrator:start",
+            actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={"data": "tampered"},
             occurred_at=ts,
