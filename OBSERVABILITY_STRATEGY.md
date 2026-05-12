@@ -534,7 +534,7 @@ SELECT audit_event_id,
        payload_summary,
        correlation_id,
        prev_event_hash,
-       current_event_hash
+       event_hash
   FROM audit_events
  WHERE workflow_run_id = :workflow_run_id
  ORDER BY occurred_at ASC, audit_event_id ASC
