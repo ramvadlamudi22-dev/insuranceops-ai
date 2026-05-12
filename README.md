@@ -26,6 +26,7 @@ The table lists the ten Phase 0 design documents in the canonical order. The one
 | [DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md) | How the platform is packaged, configured, and deployed through Phase 1 and Phase 2: deployment unit, orchestration tool, CI/CD pipeline, environment-variable contract, secrets delivery, migration discipline, rollout and rollback, backup posture, and explicit decisions not to adopt certain platforms yet. |
 | [RISK_ANALYSIS.md](./RISK_ANALYSIS.md) | The authoritative risk register across Phase 0 design, Phase 1 initial delivery, and operations: technical, operational, delivery, and compliance risks, each with a mitigation, an owner-role, and the signal that would reveal it materializing. |
 | [TECHNICAL_DEBT_PREVENTION.md](./TECHNICAL_DEBT_PREVENTION.md) | How the platform avoids predictable technical debt: the debt refused at the door, the debt knowingly accepted with exit criteria, and the code-level, architectural, schema, documentation, dependency, and review-discipline guardrails that keep either category from drifting. |
+| [TERMINOLOGY.md](./TERMINOLOGY.md) | Canonical terminology reference documenting all normalized terms, field names, metric names, and formatting conventions. |
 
 ### Reading order
 
@@ -57,7 +58,8 @@ At the end of Phase 0 the repository contains only the design documents and the 
 ├── TESTING_STRATEGY.md
 ├── DEPLOYMENT_STRATEGY.md
 ├── RISK_ANALYSIS.md
-└── TECHNICAL_DEBT_PREVENTION.md
+├── TECHNICAL_DEBT_PREVENTION.md
+└── TERMINOLOGY.md
 ```
 
 The proposed Phase 1 repository tree (packages, modules, and folders the code will be organized into) lives in [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) section 4. That tree is a specification for Phase 1 scaffolding, not a current state of this branch.
