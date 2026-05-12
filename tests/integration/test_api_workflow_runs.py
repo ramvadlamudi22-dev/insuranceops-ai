@@ -80,7 +80,6 @@ class TestWorkflowRunsAPI:
     async def test_create_workflow_run_success(self, client: AsyncClient) -> None:
         """Creates run in pending->running state."""
         operator = _mock_operator()
-        doc_id = str(uuid.uuid4())
 
         with (
             patch(
@@ -98,7 +97,7 @@ class TestWorkflowRunsAPI:
                 headers={"Authorization": "Bearer test-token"},
                 json={
                     "workflow_name": "claim_intake",
-                    "document_ids": [doc_id],
+                    "document_ids": [],
                     "inputs": {},
                 },
             )

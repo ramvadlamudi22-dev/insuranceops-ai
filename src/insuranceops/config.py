@@ -1,6 +1,6 @@
 """Application configuration via environment variables."""
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -17,4 +17,4 @@ class Settings(BaseSettings):
     ASSUME_TLS_TERMINATOR: bool = False
     PAYLOAD_STORAGE_PATH: str = "/data/payloads"
 
-    model_config = {"env_prefix": "", "case_sensitive": True}
+    model_config = SettingsConfigDict(env_prefix="", case_sensitive=True)
