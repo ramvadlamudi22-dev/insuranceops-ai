@@ -119,7 +119,7 @@ Capability on rows, role on columns. Values are `allow` or `deny`. There is no "
 | Claim EscalationCase (`POST /v1/escalations/{id}/claim`) | allow | allow | deny |
 | Resolve EscalationCase (`POST /v1/escalations/{id}/resolve`) | allow | allow | deny |
 | Reject EscalationCase (`POST /v1/escalations/{id}/reject`) | allow | allow | deny |
-| Cancel WorkflowRun (Phase 2 endpoint) | deny | allow | deny |
+| Cancel WorkflowRun (`POST /v1/workflow-runs/{id}/cancel`) | deny | allow | deny |
 | Requeue DLQ entry (Phase 2 endpoint) | deny | allow | deny |
 | Manage api_keys (Phase 2 endpoint) | deny | allow | deny |
 | Manage users (Phase 2 endpoint) | deny | allow | deny |

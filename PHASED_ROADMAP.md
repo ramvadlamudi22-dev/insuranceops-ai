@@ -104,7 +104,8 @@ it is not yet "the skeleton is productionized."
 
 - FastAPI application scaffolded under `src/`
   with the endpoint surface defined in SPEC.md:
-  `POST /v1/documents`, `POST /v1/workflow-runs`,
+  `POST /v1/documents`, `GET /v1/documents/{id}/content`,
+  `POST /v1/workflow-runs`, `POST /v1/workflow-runs/{id}/cancel`,
   `GET /v1/workflow-runs/{id}`, `GET /v1/workflow-runs/{id}/events`,
   `GET /v1/escalations`, `POST /v1/escalations/{id}/claim`,
   `POST /v1/escalations/{id}/resolve`, `POST /v1/escalations/{id}/reject`,

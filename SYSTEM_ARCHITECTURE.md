@@ -2323,6 +2323,8 @@ The surface is exactly the one declared in SPEC and context:
 | POST   | `/v1/workflow-runs`                         | API key     | Start a new WorkflowRun against one or more Documents. |
 | GET    | `/v1/workflow-runs/{workflow_run_id}`       | API key     | Read WorkflowRun status.                        |
 | GET    | `/v1/workflow-runs/{workflow_run_id}/events`| API key     | Read the AuditEvent timeline for a run.         |
+| POST   | `/v1/workflow-runs/{workflow_run_id}/cancel` | API key     | Cancel a WorkflowRun in `running` or `awaiting_human` state (supervisor only). |
+| GET    | `/v1/documents/{document_id}/content`       | API key     | Fetch raw Document bytes (operator and supervisor only).  |
 | GET    | `/v1/escalations`                           | session or key | List EscalationCases with filters.          |
 | POST   | `/v1/escalations/{escalation_id}/claim`     | session or key | Claim a case.                               |
 | POST   | `/v1/escalations/{escalation_id}/resolve`   | session or key | Resolve a claimed case (override or approve). |
@@ -2367,6 +2369,19 @@ Shapes are Pydantic v2 models in code; they are described here in prose.
 - Response: `{events: [...], next_cursor?: string}`.
   Each event includes `audit_event_id`, `event_type`, `actor`, `occurred_at`, and `event_payload`.
 - Errors: 401, 404.
+
+`POST /v1/workflow-runs/{workflow_run_id}/cancel`:
+
+- Request: `{reason?, notes?}`.
+- Response: `{workflow_run_id, state: 'cancelled', cancelled_at, cancelled_by}`.
+- Errors: 401, 403 (not supervisor), 404, 409 (run not in a cancellable state).
+
+`GET /v1/documents/{document_id}/content`:
+
+- Request: none (document_id in path).
+- Response: raw bytes with `Content-Type` matching the Document's `content_type`.
+  `Content-Disposition: attachment; filename="{document_id}.{ext}"`.
+- Errors: 401, 403 (viewer denied), 404, 410 (payload retired).
 
 `GET /v1/escalations`:
 
