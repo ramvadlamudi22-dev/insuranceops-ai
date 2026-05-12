@@ -17,7 +17,6 @@ from sqlalchemy import (
     SmallInteger,
     Text,
     UniqueConstraint,
-    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -49,7 +48,7 @@ class DocumentModel(Base):
         PG_UUID(as_uuid=True), ForeignKey("api_keys.api_key_id"), nullable=True
     )
     metadata_: Mapped[dict] = mapped_column(
-        "metadata", JSONB, nullable=False, server_default=text("'{}'")
+        "metadata", JSONB, nullable=False, server_default="'{}'"
     )
 
     __table_args__ = (
@@ -142,7 +141,7 @@ class StepModel(Base):
     retry_policy: Mapped[dict] = mapped_column(
         JSONB,
         nullable=False,
-        server_default=text('\'{"base_delay_s":2,"cap_s":60,"jitter":"full"}\''),
+        server_default='\'{"base_delay_s":2,"cap_s":60,"jitter":"full"}\'',
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default="now()"
@@ -310,7 +309,7 @@ class AuditEventModel(Base):
     )
     event_type: Mapped[str] = mapped_column(Text, nullable=False)
     actor: Mapped[str] = mapped_column(Text, nullable=False)
-    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="'{}'")
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default="now()"
     )
