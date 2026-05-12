@@ -537,7 +537,7 @@ SELECT audit_event_id,
        event_hash
   FROM audit_events
  WHERE workflow_run_id = :workflow_run_id
- ORDER BY occurred_at ASC, audit_event_id ASC
+ ORDER BY occurred_at ASC, seq_in_run ASC
  LIMIT :page_size
 OFFSET :page_offset
 ```

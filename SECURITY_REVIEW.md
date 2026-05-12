@@ -399,7 +399,7 @@ verified by a CI test that asserts the expected grants.
 
 A verifier script (Phase 2 deliverable) walks the chain for a given `workflow_run_id`:
 
-1. Select all rows WHERE workflow_run_id = ? ORDER BY occurred_at, audit_event_id.
+1. Select all rows WHERE workflow_run_id = ? ORDER BY occurred_at, seq_in_run.
 2. For each row, recompute `expected_current_hash = sha256(prev_event_hash || canonical_payload)`.
 3. Assert `row.event_hash == expected_current_hash` and
    `row.prev_event_hash == previous_row.event_hash`.
