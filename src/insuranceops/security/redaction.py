@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-REDACTED_FIELDS = frozenset({
-    "ssn",
-    "social_security",
-    "dob",
-    "date_of_birth",
-    "policy_number",
-    "phone",
-    "email",
-    "address",
-})
+REDACTED_FIELDS = frozenset(
+    {
+        "ssn",
+        "social_security",
+        "dob",
+        "date_of_birth",
+        "policy_number",
+        "phone",
+        "email",
+        "address",
+    }
+)
 
 REDACTED_VALUE = "[REDACTED]"
 

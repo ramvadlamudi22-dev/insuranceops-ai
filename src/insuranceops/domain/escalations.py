@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -19,22 +18,28 @@ class EscalationState(Enum):
     expired = "expired"
 
 
-TERMINAL_STATES = frozenset({
-    EscalationState.resolved,
-    EscalationState.rejected,
-    EscalationState.expired,
-})
-
-VALID_TRANSITIONS: dict[EscalationState, frozenset[EscalationState]] = {
-    EscalationState.open: frozenset({
-        EscalationState.claimed,
-        EscalationState.expired,
-    }),
-    EscalationState.claimed: frozenset({
+TERMINAL_STATES = frozenset(
+    {
         EscalationState.resolved,
         EscalationState.rejected,
         EscalationState.expired,
-    }),
+    }
+)
+
+VALID_TRANSITIONS: dict[EscalationState, frozenset[EscalationState]] = {
+    EscalationState.open: frozenset(
+        {
+            EscalationState.claimed,
+            EscalationState.expired,
+        }
+    ),
+    EscalationState.claimed: frozenset(
+        {
+            EscalationState.resolved,
+            EscalationState.rejected,
+            EscalationState.expired,
+        }
+    ),
     EscalationState.resolved: frozenset(),
     EscalationState.rejected: frozenset(),
     EscalationState.expired: frozenset(),
@@ -63,12 +68,12 @@ class EscalationCase:
     reason_code: str
     expires_at: datetime
     created_at: datetime
-    reason_detail: Optional[str] = None
-    claimed_by: Optional[str] = None
-    claimed_at: Optional[datetime] = None
-    resolved_by: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    resolution_payload: Optional[dict[str, object]] = None
+    reason_detail: str | None = None
+    claimed_by: str | None = None
+    claimed_at: datetime | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    resolution_payload: dict[str, object] | None = None
 
     def transition_to(self, target: EscalationState) -> None:
         """Transition the EscalationCase to a new state.

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from insuranceops.api.deps import get_db_session
-from insuranceops.api.schemas.documents import DocumentIngestResponse, DocumentResponse
+from insuranceops.api.schemas.documents import DocumentIngestResponse
 from insuranceops.security.auth import ApiKeyPrincipal
 from insuranceops.security.rbac import requires_role
 from insuranceops.storage.models import DocumentModel
@@ -37,7 +37,7 @@ async def ingest_document(
     size_bytes = len(content)
     content_type = file.content_type or "application/octet-stream"
     document_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Store payload via the payload store
     from insuranceops.storage.payloads.local import LocalPayloadStore

@@ -16,7 +16,7 @@ import asyncio
 import json
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -32,7 +32,7 @@ from insuranceops.observability.metrics import (
 )
 from insuranceops.queue.dlq import move_to_dlq
 from insuranceops.queue.reliable_queue import QUEUE_INFLIGHT_PREFIX, ack
-from insuranceops.storage.models import StepAttemptModel, StepModel, WorkflowRunModel
+from insuranceops.storage.models import StepAttemptModel, StepModel
 from insuranceops.storage.repositories.step_attempts import StepAttemptRepository
 from insuranceops.storage.repositories.steps import StepRepository
 from insuranceops.storage.repositories.workflow_runs import WorkflowRunRepository
@@ -157,7 +157,7 @@ async def _process_task(
 
             # Mark attempt as in_progress
             attempt.state = "in_progress"
-            attempt.started_at = datetime.now(timezone.utc)
+            attempt.started_at = datetime.now(UTC)
             await session.flush()
 
             # Execute step handler
@@ -170,7 +170,7 @@ async def _process_task(
                 session=session,
             )
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             # Write outcome
             if outcome["status"] == "success":
@@ -381,8 +381,6 @@ async def _load_previous_outputs(
     """
     from sqlalchemy import select
 
-    from insuranceops.storage.models import StepAttemptModel, StepModel
-
     # Get current step to find its index
     result = await session.execute(
         select(StepModel).where(
@@ -396,11 +394,13 @@ async def _load_previous_outputs(
 
     # Get all preceding steps that succeeded
     result = await session.execute(
-        select(StepModel).where(
+        select(StepModel)
+        .where(
             StepModel.workflow_run_id == workflow_run_id,
             StepModel.step_index < current_step.step_index,
             StepModel.state == "succeeded",
-        ).order_by(StepModel.step_index)
+        )
+        .order_by(StepModel.step_index)
     )
     preceding_steps = result.scalars().all()
 
@@ -408,10 +408,13 @@ async def _load_previous_outputs(
     for step in preceding_steps:
         # Get the latest succeeded attempt for this step
         attempt_result = await session.execute(
-            select(StepAttemptModel).where(
+            select(StepAttemptModel)
+            .where(
                 StepAttemptModel.step_id == step.step_id,
                 StepAttemptModel.state == "succeeded",
-            ).order_by(StepAttemptModel.step_attempt_number.desc()).limit(1)
+            )
+            .order_by(StepAttemptModel.step_attempt_number.desc())
+            .limit(1)
         )
         attempt = attempt_result.scalar_one_or_none()
         if attempt is not None and attempt.output_ref is not None:

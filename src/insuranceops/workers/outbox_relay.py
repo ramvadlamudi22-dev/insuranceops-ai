@@ -10,9 +10,8 @@ Acquires a Postgres advisory lock so only one relay runs across all processes.
 from __future__ import annotations
 
 import asyncio
-import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
 from sqlalchemy import text
@@ -53,7 +52,7 @@ async def outbox_relay_loop(
         try:
             await asyncio.wait_for(shutdown_event.wait(), timeout=RELAY_INTERVAL_S)
             break
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
     logger.info("outbox_relay_stopped")
@@ -69,16 +68,14 @@ async def _relay_batch(
 
     async with session_factory() as session:
         # Try to acquire advisory lock
-        result = await session.execute(
-            text(f"SELECT pg_try_advisory_lock({OUTBOX_RELAY_LOCK_ID})")
-        )
+        result = await session.execute(text(f"SELECT pg_try_advisory_lock({OUTBOX_RELAY_LOCK_ID})"))
         acquired = result.scalar()
 
         if not acquired:
             return 0
 
         try:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             repo = OutboxRepository(session)
             pending = await repo.get_pending(limit=100)
 
@@ -93,9 +90,7 @@ async def _relay_batch(
                         await enqueue(redis_client, payload)
                     else:
                         # Future: add to delayed ZSET
-                        await schedule_delayed(
-                            redis_client, payload, entry.scheduled_for
-                        )
+                        await schedule_delayed(redis_client, payload, entry.scheduled_for)
 
                     # Mark as enqueued
                     await repo.mark_enqueued(entry.outbox_id, now)
@@ -124,9 +119,7 @@ async def _relay_batch(
             await session.commit()
         finally:
             # Release advisory lock
-            await session.execute(
-                text(f"SELECT pg_advisory_unlock({OUTBOX_RELAY_LOCK_ID})")
-            )
+            await session.execute(text(f"SELECT pg_advisory_unlock({OUTBOX_RELAY_LOCK_ID})"))
             await session.commit()
 
     batch_duration = time.perf_counter() - batch_start

@@ -7,7 +7,6 @@ Format: <kind>:<subkind>:<id> or <kind>:<subkind> for singleton service identiti
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 CANONICAL_KINDS = frozenset({"worker", "api", "user", "api_key", "anonymous"})
 
@@ -23,7 +22,7 @@ class Actor:
 
     kind: str
     subkind: str
-    id: Optional[str] = None
+    id: str | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in CANONICAL_KINDS:

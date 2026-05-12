@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -12,7 +13,7 @@ from insuranceops.security.auth import ApiKeyPrincipal, authenticate_api_key
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def requires_role(*roles: str):
+def requires_role(*roles: str) -> Callable[..., Coroutine[Any, Any, ApiKeyPrincipal]]:
     """Return a FastAPI dependency that enforces role-based access.
 
     Usage:
@@ -49,7 +50,7 @@ def requires_role(*roles: str):
             )
         except ValueError as e:
             auth_denials_total.labels(reason="invalid_key").inc()
-            raise HTTPException(status_code=401, detail=str(e))
+            raise HTTPException(status_code=401, detail=str(e)) from None
 
         if principal.role not in roles:
             auth_denials_total.labels(reason="insufficient_role").inc()

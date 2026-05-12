@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,4 +12,4 @@ class ErrorResponse(BaseModel):
 
     error_code: str
     message: str
-    detail: Optional[Any] = None
+    detail: Any | None = None

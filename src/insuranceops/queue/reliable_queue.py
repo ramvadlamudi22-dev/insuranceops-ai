@@ -8,7 +8,7 @@ Queue keys:
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 import redis.asyncio as redis
 
@@ -36,9 +36,7 @@ async def enqueue(client: redis.Redis, payload: dict[str, Any]) -> int:
     return length
 
 
-async def claim(
-    client: redis.Redis, worker_id: str, timeout: int = 5
-) -> Optional[dict[str, Any]]:
+async def claim(client: redis.Redis, worker_id: str, timeout: int = 5) -> dict[str, Any] | None:
     """Claim a task from the ready queue via BRPOPLPUSH.
 
     Atomically moves a task from the ready queue to the worker's inflight list.
@@ -52,9 +50,7 @@ async def claim(
     Returns:
         Parsed task payload dict, or None if timeout elapsed.
     """
-    result = await client.brpoplpush(
-        QUEUE_READY, _inflight_key(worker_id), timeout=timeout
-    )
+    result = await client.brpoplpush(QUEUE_READY, _inflight_key(worker_id), timeout=timeout)
     if result is None:
         return None
     return json.loads(result)
@@ -89,9 +85,7 @@ async def get_inflight(client: redis.Redis, worker_id: str) -> list[bytes]:
     return items
 
 
-async def move_to_ready(
-    client: redis.Redis, worker_id: str, payload_bytes: bytes
-) -> None:
+async def move_to_ready(client: redis.Redis, worker_id: str, payload_bytes: bytes) -> None:
     """Move a task from inflight back to the ready queue.
 
     Used by the reaper when a task exceeds visibility timeout.

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -17,11 +17,9 @@ class StepRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, step_id: UUID) -> Optional[StepModel]:
+    async def get_by_id(self, step_id: UUID) -> StepModel | None:
         """Get a step by its ID."""
-        result = await self._session.execute(
-            select(StepModel).where(StepModel.step_id == step_id)
-        )
+        result = await self._session.execute(select(StepModel).where(StepModel.step_id == step_id))
         return result.scalar_one_or_none()
 
     async def create(self, model: StepModel) -> StepModel:
@@ -45,9 +43,7 @@ class StepRepository:
         )
         return result.scalars().all()
 
-    async def get_by_run_and_name(
-        self, workflow_run_id: UUID, step_name: str
-    ) -> Optional[StepModel]:
+    async def get_by_run_and_name(self, workflow_run_id: UUID, step_name: str) -> StepModel | None:
         """Get a step by workflow run ID and step name."""
         result = await self._session.execute(
             select(StepModel).where(

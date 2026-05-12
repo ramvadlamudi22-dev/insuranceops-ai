@@ -6,7 +6,6 @@ Requires: Postgres, Redis (via service containers or compose.test.yml).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -43,25 +42,19 @@ async def client(app):
 def _mock_operator():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="operator", label="test-op"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="operator", label="test-op")
 
 
 def _mock_supervisor():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="supervisor", label="test-sup"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="supervisor", label="test-sup")
 
 
 def _mock_viewer():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer")
 
 
 @pytest.mark.integration

@@ -37,9 +37,7 @@ class IngestStepHandler:
             return StepResult(
                 status="failed_terminal",
                 error_code="DOCUMENTS_NOT_FOUND",
-                error_detail=(
-                    f"Documents not found: {', '.join(missing_ids)}"
-                ),
+                error_detail=(f"Documents not found: {', '.join(missing_ids)}"),
             )
 
         return StepResult(

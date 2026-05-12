@@ -25,9 +25,7 @@ def _epoch_ms(dt: datetime) -> float:
     return dt.timestamp() * 1000.0
 
 
-async def schedule(
-    client: redis.Redis, payload: dict[str, Any], run_at: datetime
-) -> int:
+async def schedule(client: redis.Redis, payload: dict[str, Any], run_at: datetime) -> int:
     """Schedule a task for future execution.
 
     Args:
@@ -44,9 +42,7 @@ async def schedule(
     return added
 
 
-async def mature_tasks(
-    client: redis.Redis, now: datetime, batch_size: int = 200
-) -> int:
+async def mature_tasks(client: redis.Redis, now: datetime, batch_size: int = 200) -> int:
     """Move tasks that are due from the delayed ZSET to the ready list.
 
     Uses ZPOPMIN in a loop for atomic removal from the sorted set,

@@ -135,7 +135,6 @@ class ValidateStepHandler:
                 },
                 error_code="VALIDATION_FAIL_TERMINAL",
                 error_detail=(
-                    f"Validation failed terminally: "
-                    f"{', '.join(r.code for r in outcome.reasons)}"
+                    f"Validation failed terminally: {', '.join(r.code for r in outcome.reasons)}"
                 ),
             )

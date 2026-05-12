@@ -6,9 +6,7 @@ Requires: Postgres, Redis (via service containers or compose.test.yml).
 from __future__ import annotations
 
 import hashlib
-import io
 import uuid
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -59,9 +57,7 @@ class TestDocumentIngest:
         # Mock the auth to return a viewer principal
         from insuranceops.security.auth import ApiKeyPrincipal
 
-        viewer = ApiKeyPrincipal(
-            api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer"
-        )
+        viewer = ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer")
         with patch(
             "insuranceops.api.deps.authenticate_api_key",
             new_callable=AsyncMock,
@@ -78,9 +74,7 @@ class TestDocumentIngest:
         """Operator uploads file, gets back document_id and content_hash."""
         from insuranceops.security.auth import ApiKeyPrincipal
 
-        operator = ApiKeyPrincipal(
-            api_key_id=str(uuid.uuid4()), role="operator", label="test-op"
-        )
+        operator = ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="operator", label="test-op")
         content = b"Claim Number: CLM-2025-001\nPolicy Number: POL-12345678"
 
         with (
@@ -89,12 +83,8 @@ class TestDocumentIngest:
                 new_callable=AsyncMock,
                 return_value=operator,
             ),
-            patch(
-                "insuranceops.api.routes.documents.DocumentRepository"
-            ) as mock_repo_cls,
-            patch(
-                "insuranceops.api.routes.documents.LocalPayloadStore"
-            ) as mock_store_cls,
+            patch("insuranceops.api.routes.documents.DocumentRepository") as mock_repo_cls,
+            patch("insuranceops.api.routes.documents.LocalPayloadStore") as mock_store_cls,
         ):
             mock_repo = mock_repo_cls.return_value
             mock_repo.get_by_content_hash = AsyncMock(return_value=[])

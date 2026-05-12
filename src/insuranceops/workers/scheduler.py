@@ -7,7 +7,7 @@ all worker processes.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
 from sqlalchemy import text
@@ -42,10 +42,8 @@ async def scheduler_loop(
 
                 if acquired:
                     try:
-                        now = datetime.now(timezone.utc)
-                        promoted = await mature_tasks(
-                            redis_client, now, batch_size=200
-                        )
+                        now = datetime.now(UTC)
+                        promoted = await mature_tasks(redis_client, now, batch_size=200)
                         if promoted > 0:
                             logger.info("scheduler_promoted", count=promoted)
                     finally:
@@ -64,7 +62,7 @@ async def scheduler_loop(
         try:
             await asyncio.wait_for(shutdown_event.wait(), timeout=SCHEDULER_INTERVAL_S)
             break
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
     logger.info("scheduler_stopped")

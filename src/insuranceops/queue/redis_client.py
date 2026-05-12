@@ -5,9 +5,7 @@ from __future__ import annotations
 import redis.asyncio as redis
 
 
-async def create_redis_pool(
-    url: str, max_connections: int = 20
-) -> redis.Redis:
+async def create_redis_pool(url: str, max_connections: int = 20) -> redis.Redis:
     """Create an async Redis client with a connection pool.
 
     Args:

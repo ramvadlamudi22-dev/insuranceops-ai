@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional, Protocol
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 from insuranceops.workflows.extractors.base import ExtractionResult
@@ -21,7 +21,7 @@ class ValidationReason:
     """
 
     code: str
-    field: Optional[str] = None
+    field: str | None = None
     message: str = ""
     detail: dict[str, Any] = field(default_factory=dict)
 
@@ -50,7 +50,7 @@ class ReferenceData:
         data: The reference data dictionary.
     """
 
-    snapshot_id: Optional[UUID] = None
+    snapshot_id: UUID | None = None
     data: dict[str, Any] = field(default_factory=dict)
 
 
@@ -71,9 +71,7 @@ class Validator(Protocol):
         """Validator version."""
         ...
 
-    def validate(
-        self, result: ExtractionResult, ref: ReferenceData
-    ) -> ValidationOutcome:
+    def validate(self, result: ExtractionResult, ref: ReferenceData) -> ValidationOutcome:
         """Validate an extraction result against reference data.
 
         Args:

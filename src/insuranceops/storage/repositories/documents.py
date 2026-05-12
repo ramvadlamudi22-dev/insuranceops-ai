@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -17,7 +17,7 @@ class DocumentRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, document_id: UUID) -> Optional[DocumentModel]:
+    async def get_by_id(self, document_id: UUID) -> DocumentModel | None:
         """Get a document by its ID."""
         result = await self._session.execute(
             select(DocumentModel).where(DocumentModel.document_id == document_id)

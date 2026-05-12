@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from insuranceops.workflows.retry import RetryPolicy
 
@@ -75,9 +74,7 @@ class WorkflowRegistry:
             )
         self._definitions[key] = definition
 
-    def get(
-        self, workflow_name: str, workflow_version: str
-    ) -> Optional[WorkflowDefinition]:
+    def get(self, workflow_name: str, workflow_version: str) -> WorkflowDefinition | None:
         """Look up a workflow definition by name and version.
 
         Args:
@@ -89,7 +86,7 @@ class WorkflowRegistry:
         """
         return self._definitions.get((workflow_name, workflow_version))
 
-    def get_latest(self, workflow_name: str) -> Optional[WorkflowDefinition]:
+    def get_latest(self, workflow_name: str) -> WorkflowDefinition | None:
         """Get the latest registered version of a workflow by name.
 
         Returns the definition with the highest lexicographic version string
@@ -102,9 +99,7 @@ class WorkflowRegistry:
             The latest workflow definition, or None if no versions are registered.
         """
         candidates = [
-            defn
-            for (name, _version), defn in self._definitions.items()
-            if name == workflow_name
+            defn for (name, _version), defn in self._definitions.items() if name == workflow_name
         ]
         if not candidates:
             return None

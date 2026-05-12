@@ -16,20 +16,14 @@ correlation_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
 workflow_run_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
     "workflow_run_id", default=""
 )
-step_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "step_id", default=""
-)
+step_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("step_id", default="")
 step_attempt_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
     "step_attempt_id", default=""
 )
-actor_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "actor", default=""
-)
+actor_var: contextvars.ContextVar[str] = contextvars.ContextVar("actor", default="")
 
 
-def add_context_vars(
-    logger: Any, method_name: str, event_dict: dict[str, Any]
-) -> dict[str, Any]:
+def add_context_vars(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     """Inject context variables into every log event."""
     ctx_mapping = {
         "correlation_id": correlation_id_var,

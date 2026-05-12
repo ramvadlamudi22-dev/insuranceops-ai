@@ -5,7 +5,6 @@ from __future__ import annotations
 import random as _random_mod
 from dataclasses import dataclass, field
 from random import Random
-from typing import Optional
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +25,7 @@ class RetryPolicy:
 def compute_backoff_delay(
     policy: RetryPolicy,
     attempt_number: int,
-    rng: Optional[Random] = None,
+    rng: Random | None = None,
 ) -> float:
     """Compute the backoff delay for a retry attempt.
 

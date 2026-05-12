@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -19,12 +19,12 @@ class EscalationResponse(BaseModel):
     step_id: UUID
     state: str
     reason_code: str
-    reason_detail: Optional[str] = None
-    claimed_by: Optional[str] = None
-    claimed_at: Optional[datetime] = None
-    resolved_by: Optional[str] = None
-    resolved_at: Optional[datetime] = None
-    resolution_payload: Optional[dict[str, Any]] = None
+    reason_detail: str | None = None
+    claimed_by: str | None = None
+    claimed_at: datetime | None = None
+    resolved_by: str | None = None
+    resolved_at: datetime | None = None
+    resolution_payload: dict[str, Any] | None = None
     expires_at: datetime
     created_at: datetime
 
@@ -33,7 +33,7 @@ class EscalationListResponse(BaseModel):
     """Response model for escalation list (paginated)."""
 
     escalations: list[EscalationResponse]
-    next_cursor: Optional[str] = None
+    next_cursor: str | None = None
 
 
 class EscalationClaimResponse(BaseModel):
@@ -48,8 +48,8 @@ class EscalationClaimResponse(BaseModel):
 class ResolveRequest(BaseModel):
     """Request model for resolving an escalation."""
 
-    approve: Optional[bool] = None
-    override: Optional[dict[str, Any]] = None
+    approve: bool | None = None
+    override: dict[str, Any] | None = None
     notes: str
 
 

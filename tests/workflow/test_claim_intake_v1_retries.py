@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from random import Random
 
-import pytest
-
 from insuranceops.domain.escalations import EscalationState
 from insuranceops.domain.workflow_runs import WorkflowRunState, validate_transition
 from insuranceops.workflows.retry import RetryPolicy, compute_backoff_delay
@@ -74,9 +72,7 @@ class TestExtractRetries:
                 assert delay >= 0.0
 
         # After exhausting retries with escalate_on_failure, transition to awaiting_human
-        validate_transition(
-            WorkflowRunState.running, WorkflowRunState.awaiting_human
-        )
+        validate_transition(WorkflowRunState.running, WorkflowRunState.awaiting_human)
 
         # Escalation case is created in 'open' state
         esc_state = EscalationState.open

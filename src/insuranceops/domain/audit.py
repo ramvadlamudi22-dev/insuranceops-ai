@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 
@@ -22,7 +22,7 @@ def compute_event_hash(
     event_type: str,
     payload: dict[str, Any],
     occurred_at: datetime,
-    prev_event_hash: Optional[bytes],
+    prev_event_hash: bytes | None,
 ) -> bytes:
     """Compute the SHA-256 hash of an audit event.
 
@@ -59,22 +59,19 @@ class AuditEvent:
     payload: dict[str, Any]
     occurred_at: datetime
     seq_in_run: int
-    prev_event_hash: Optional[bytes]
+    prev_event_hash: bytes | None
     event_hash: bytes
-    step_id: Optional[UUID] = None
-    step_attempt_id: Optional[UUID] = None
+    step_id: UUID | None = None
+    step_attempt_id: UUID | None = None
 
     def __post_init__(self) -> None:
         if self.seq_in_run < 1:
             raise ValueError(f"seq_in_run must be >= 1, got {self.seq_in_run}")
         if len(self.event_hash) != 32:
-            raise ValueError(
-                f"event_hash must be exactly 32 bytes, got {len(self.event_hash)}"
-            )
+            raise ValueError(f"event_hash must be exactly 32 bytes, got {len(self.event_hash)}")
         if self.prev_event_hash is not None and len(self.prev_event_hash) != 32:
             raise ValueError(
-                f"prev_event_hash must be exactly 32 bytes or None, "
-                f"got {len(self.prev_event_hash)}"
+                f"prev_event_hash must be exactly 32 bytes or None, got {len(self.prev_event_hash)}"
             )
 
     def verify_hash(self) -> bool:

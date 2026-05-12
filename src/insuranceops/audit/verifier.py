@@ -7,7 +7,6 @@ event_hash, comparing to the stored value to detect tampering.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,13 +21,11 @@ class VerificationResult:
     """Result of chain verification."""
 
     is_valid: bool
-    first_mismatch_index: Optional[int] = None
-    detail: Optional[str] = None
+    first_mismatch_index: int | None = None
+    detail: str | None = None
 
 
-async def verify_chain(
-    session: AsyncSession, workflow_run_id: UUID
-) -> VerificationResult:
+async def verify_chain(session: AsyncSession, workflow_run_id: UUID) -> VerificationResult:
     """Verify the integrity of the audit event chain for a workflow run.
 
     Loads all AuditEvents ordered by (occurred_at, seq_in_run), recomputes
@@ -47,7 +44,7 @@ async def verify_chain(
     if not events:
         return VerificationResult(is_valid=True, detail="No events in chain")
 
-    prev_event_hash: Optional[bytes] = None
+    prev_event_hash: bytes | None = None
 
     for idx, event in enumerate(events):
         # Verify chain linkage: each event's prev_event_hash should match

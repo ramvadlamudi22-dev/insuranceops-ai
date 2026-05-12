@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -17,12 +17,10 @@ class WorkflowRunRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, workflow_run_id: UUID) -> Optional[WorkflowRunModel]:
+    async def get_by_id(self, workflow_run_id: UUID) -> WorkflowRunModel | None:
         """Get a workflow run by its ID."""
         result = await self._session.execute(
-            select(WorkflowRunModel).where(
-                WorkflowRunModel.workflow_run_id == workflow_run_id
-            )
+            select(WorkflowRunModel).where(WorkflowRunModel.workflow_run_id == workflow_run_id)
         )
         return result.scalar_one_or_none()
 

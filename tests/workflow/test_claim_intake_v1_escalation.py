@@ -6,9 +6,8 @@ and that resolve/reject produce the correct final states.
 
 from __future__ import annotations
 
-import pytest
-
-from insuranceops.domain.escalations import EscalationState, validate_transition as validate_esc
+from insuranceops.domain.escalations import EscalationState
+from insuranceops.domain.escalations import validate_transition as validate_esc
 from insuranceops.domain.workflow_runs import WorkflowRunState, validate_transition
 from insuranceops.workflows.extractors.base import ExtractionField, ExtractionResult
 from insuranceops.workflows.steps.base import StepResult
@@ -25,9 +24,7 @@ class TestValidatorEscalation:
         """
         # Create extraction with invalid policy format
         fields = {
-            "claim_number": ExtractionField(
-                name="claim_number", value="CLM-001", confidence=0.95
-            ),
+            "claim_number": ExtractionField(name="claim_number", value="CLM-001", confidence=0.95),
             "policy_number": ExtractionField(
                 name="policy_number", value="INVALID", confidence=0.95
             ),
@@ -35,9 +32,7 @@ class TestValidatorEscalation:
                 name="date_of_loss", value="01/15/2025", confidence=0.95
             ),
         }
-        result = ExtractionResult(
-            fields=fields, extractor_name="stub", extractor_version="1.0.0"
-        )
+        result = ExtractionResult(fields=fields, extractor_name="stub", extractor_version="1.0.0")
 
         validator = RuleBasedValidator()
         outcome = validator.validate(result, ReferenceData())
@@ -54,9 +49,7 @@ class TestValidatorEscalation:
         assert step_result.status == "escalate"
 
         # Workflow transitions to awaiting_human
-        validate_transition(
-            WorkflowRunState.running, WorkflowRunState.awaiting_human
-        )
+        validate_transition(WorkflowRunState.running, WorkflowRunState.awaiting_human)
 
         # Escalation is in 'open' state
         esc_state = EscalationState.open
@@ -69,9 +62,7 @@ class TestValidatorEscalation:
         validate_esc(EscalationState.claimed, EscalationState.resolved)
 
         # Workflow goes awaiting_human -> running -> completed
-        validate_transition(
-            WorkflowRunState.awaiting_human, WorkflowRunState.running
-        )
+        validate_transition(WorkflowRunState.awaiting_human, WorkflowRunState.running)
         validate_transition(WorkflowRunState.running, WorkflowRunState.completed)
 
     def test_reject_escalation_fails_workflow(self) -> None:
@@ -81,6 +72,4 @@ class TestValidatorEscalation:
         validate_esc(EscalationState.claimed, EscalationState.rejected)
 
         # Workflow transitions to failed (from awaiting_human or running)
-        validate_transition(
-            WorkflowRunState.running, WorkflowRunState.failed
-        )
+        validate_transition(WorkflowRunState.running, WorkflowRunState.failed)

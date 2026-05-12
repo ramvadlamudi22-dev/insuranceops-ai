@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -49,7 +49,7 @@ class WorkflowOrchestrator:
         document_ids: list[UUID],
         actor: str,
         correlation_id: str,
-        deadline_seconds: Optional[int] = None,
+        deadline_seconds: int | None = None,
     ) -> WorkflowRunModel:
         """Start a new workflow run.
 
@@ -73,11 +73,9 @@ class WorkflowOrchestrator:
         """
         definition = registry.get(workflow_name, workflow_version)
         if definition is None:
-            raise ValueError(
-                f"Workflow definition not found: {workflow_name} {workflow_version}"
-            )
+            raise ValueError(f"Workflow definition not found: {workflow_name} {workflow_version}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         effective_deadline = deadline_seconds or definition.deadline_seconds
 
         # Create WorkflowRun
@@ -188,7 +186,7 @@ class WorkflowOrchestrator:
         # Transition WorkflowRun to running
         workflow_run.state = "running"
         workflow_run.version = 1
-        workflow_run.updated_at = datetime.now(timezone.utc)
+        workflow_run.updated_at = datetime.now(UTC)
         await session.flush()
 
         return workflow_run
@@ -216,22 +214,17 @@ class WorkflowOrchestrator:
         """
         run_repo = WorkflowRunRepository(session)
         step_repo = StepRepository(session)
-        attempt_repo = StepAttemptRepository(session)
 
         workflow_run = await run_repo.get_by_id(workflow_run_id)
         if workflow_run is None:
             raise ValueError(f"WorkflowRun not found: {workflow_run_id}")
 
         steps = await step_repo.list_by_workflow_run(workflow_run_id)
-        current_step = await step_repo.get_by_run_and_name(
-            workflow_run_id, completed_step_name
-        )
+        current_step = await step_repo.get_by_run_and_name(workflow_run_id, completed_step_name)
         if current_step is None:
-            raise ValueError(
-                f"Step not found: {completed_step_name} in run {workflow_run_id}"
-            )
+            raise ValueError(f"Step not found: {completed_step_name} in run {workflow_run_id}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if step_result.status == "succeeded":
             return await self._handle_succeeded(
@@ -269,9 +262,7 @@ class WorkflowOrchestrator:
         else:
             raise ValueError(f"Unknown step result status: {step_result.status}")
 
-    async def _get_document_ids(
-        self, session: AsyncSession, workflow_run_id: UUID
-    ) -> list[str]:
+    async def _get_document_ids(self, session: AsyncSession, workflow_run_id: UUID) -> list[str]:
         """Get document IDs associated with a workflow run.
 
         Args:
@@ -298,7 +289,6 @@ class WorkflowOrchestrator:
         now: datetime,
     ) -> str:
         """Handle a succeeded step: advance to next step or complete."""
-        step_repo = StepRepository(session)
         attempt_repo = StepAttemptRepository(session)
 
         # Mark current step as succeeded
@@ -307,7 +297,7 @@ class WorkflowOrchestrator:
         await session.flush()
 
         # Find next step by step_index
-        next_step: Optional[StepModel] = None
+        next_step: StepModel | None = None
         for step in steps:
             if step.step_index == current_step.step_index + 1:
                 next_step = step
@@ -359,9 +349,7 @@ class WorkflowOrchestrator:
         await session.flush()
 
         # Look up workflow definition for handler_name
-        definition = registry.get(
-            workflow_run.workflow_name, workflow_run.workflow_version
-        )
+        definition = registry.get(workflow_run.workflow_name, workflow_run.workflow_version)
         handler_name = next_step.step_name
         if definition is not None:
             for step_def in definition.steps:
@@ -453,9 +441,7 @@ class WorkflowOrchestrator:
             await session.flush()
 
             # Look up handler_name
-            definition = registry.get(
-                workflow_run.workflow_name, workflow_run.workflow_version
-            )
+            definition = registry.get(workflow_run.workflow_name, workflow_run.workflow_version)
             handler_name = current_step.step_name
             if definition is not None:
                 for step_def in definition.steps:
@@ -464,9 +450,7 @@ class WorkflowOrchestrator:
                         break
 
             # Get document_ids for the workflow run
-            document_ids = await self._get_document_ids(
-                session, workflow_run.workflow_run_id
-            )
+            document_ids = await self._get_document_ids(session, workflow_run.workflow_run_id)
 
             # Insert outbox row with scheduled_for
             outbox_entry = TasksOutboxModel(
@@ -691,7 +675,7 @@ class WorkflowOrchestrator:
         if workflow_run is None:
             raise ValueError(f"WorkflowRun not found: {escalation.workflow_run_id}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Resolve the escalation
         escalation.state = "resolved"
@@ -763,7 +747,7 @@ class WorkflowOrchestrator:
         session: AsyncSession,
         workflow_run_id: UUID,
         actor: str,
-        reason: Optional[str] = None,
+        reason: str | None = None,
     ) -> None:
         """Cancel a workflow run.
 
@@ -792,7 +776,7 @@ class WorkflowOrchestrator:
                 f"Cancellable states: {sorted(cancellable_states)}"
             )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         previous_state = workflow_run.state
         workflow_run.state = "cancelled"
         workflow_run.version += 1

@@ -6,7 +6,7 @@ Requires: Postgres, Redis (via service containers or compose.test.yml).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -43,25 +43,19 @@ async def client(app):
 def _mock_operator():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="operator", label="test-op"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="operator", label="test-op")
 
 
 def _mock_supervisor():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="supervisor", label="test-sup"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="supervisor", label="test-sup")
 
 
 def _mock_viewer():
     from insuranceops.security.auth import ApiKeyPrincipal
 
-    return ApiKeyPrincipal(
-        api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer"
-    )
+    return ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer")
 
 
 @pytest.mark.integration
@@ -99,9 +93,7 @@ class TestWorkflowRunsAPI:
         assert data["workflow_name"] == "claim_intake"
         assert data["state"] == "running"
 
-    async def test_create_workflow_run_unknown_workflow(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_create_workflow_run_unknown_workflow(self, client: AsyncClient) -> None:
         """Returns 422 for unknown workflow."""
         operator = _mock_operator()
 
@@ -133,9 +125,7 @@ class TestWorkflowRunsAPI:
                 new_callable=AsyncMock,
                 return_value=viewer,
             ),
-            patch(
-                "insuranceops.api.routes.workflow_runs.WorkflowRunRepository"
-            ) as mock_cls,
+            patch("insuranceops.api.routes.workflow_runs.WorkflowRunRepository") as mock_cls,
         ):
             mock_repo = mock_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=None)
@@ -159,9 +149,9 @@ class TestWorkflowRunsAPI:
         mock_run.state = "running"
         mock_run.version = 1
         mock_run.current_step_id = uuid.uuid4()
-        mock_run.created_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
-        mock_run.updated_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
-        mock_run.deadline_at = datetime(2025, 1, 16, 10, 0, 0, tzinfo=timezone.utc)
+        mock_run.created_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
+        mock_run.updated_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
+        mock_run.deadline_at = datetime(2025, 1, 16, 10, 0, 0, tzinfo=UTC)
         mock_run.created_by = "api_key:operator:abc"
         mock_run.last_error_code = None
         mock_run.last_error_detail = None
@@ -172,9 +162,7 @@ class TestWorkflowRunsAPI:
                 new_callable=AsyncMock,
                 return_value=viewer,
             ),
-            patch(
-                "insuranceops.api.routes.workflow_runs.WorkflowRunRepository"
-            ) as mock_cls,
+            patch("insuranceops.api.routes.workflow_runs.WorkflowRunRepository") as mock_cls,
         ):
             mock_repo = mock_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=mock_run)
@@ -189,9 +177,7 @@ class TestWorkflowRunsAPI:
         assert data["state"] == "running"
         assert data["workflow_name"] == "claim_intake"
 
-    async def test_cancel_workflow_run_supervisor_only(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_cancel_workflow_run_supervisor_only(self, client: AsyncClient) -> None:
         """Operator gets 403, supervisor succeeds."""
         operator = _mock_operator()
         run_id = uuid.uuid4()
@@ -223,7 +209,7 @@ class TestWorkflowRunsAPI:
         mock_event.event_type = "workflow_run.started"
         mock_event.actor = "worker:orchestrator"
         mock_event.payload = {}
-        mock_event.occurred_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        mock_event.occurred_at = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
         mock_event.seq_in_run = 1
         mock_event.step_id = None
         mock_event.step_attempt_id = None
@@ -234,9 +220,7 @@ class TestWorkflowRunsAPI:
                 new_callable=AsyncMock,
                 return_value=viewer,
             ),
-            patch(
-                "insuranceops.api.routes.workflow_runs.WorkflowRunRepository"
-            ) as mock_run_cls,
+            patch("insuranceops.api.routes.workflow_runs.WorkflowRunRepository") as mock_run_cls,
         ):
             mock_repo = mock_run_cls.return_value
             mock_repo.get_by_id = AsyncMock(return_value=mock_run)

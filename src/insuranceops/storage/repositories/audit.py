@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -23,12 +23,10 @@ class AuditRepository:
         await self._session.flush()
         return model
 
-    async def get_by_id(self, audit_event_id: UUID) -> Optional[AuditEventModel]:
+    async def get_by_id(self, audit_event_id: UUID) -> AuditEventModel | None:
         """Get an audit event by its ID."""
         result = await self._session.execute(
-            select(AuditEventModel).where(
-                AuditEventModel.audit_event_id == audit_event_id
-            )
+            select(AuditEventModel).where(AuditEventModel.audit_event_id == audit_event_id)
         )
         return result.scalar_one_or_none()
 
@@ -44,9 +42,7 @@ class AuditRepository:
         )
         return result.scalars().all()
 
-    async def get_latest_for_run(
-        self, workflow_run_id: UUID
-    ) -> Optional[AuditEventModel]:
+    async def get_latest_for_run(self, workflow_run_id: UUID) -> AuditEventModel | None:
         """Get the latest audit event for a workflow run by seq_in_run."""
         result = await self._session.execute(
             select(AuditEventModel)

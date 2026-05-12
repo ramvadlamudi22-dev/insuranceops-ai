@@ -14,9 +14,7 @@ from insuranceops.workflows.extractors.base import (
 # Regex patterns for claim fields
 _PATTERNS: dict[str, re.Pattern[str]] = {
     "claim_number": re.compile(r"(?:claim|CLM)[#:\s-]*(\w+)", re.IGNORECASE),
-    "policy_number": re.compile(
-        r"(?:policy|POL)[#:\s-]*([A-Z]{2,3}-\d{6,10})", re.IGNORECASE
-    ),
+    "policy_number": re.compile(r"(?:policy|POL)[#:\s-]*([A-Z]{2,3}-\d{6,10})", re.IGNORECASE),
     "claimant_name": re.compile(
         r"(?:claimant|insured|name)[:\s]+([A-Za-z\s]{2,50})", re.IGNORECASE
     ),

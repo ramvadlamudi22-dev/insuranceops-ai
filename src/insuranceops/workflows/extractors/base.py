@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Protocol
+from typing import Any, Protocol
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,10 +17,10 @@ class Provenance:
         text_snippet: The matched text snippet.
     """
 
-    page: Optional[int] = None
-    offset_start: Optional[int] = None
-    offset_end: Optional[int] = None
-    text_snippet: Optional[str] = None
+    page: int | None = None
+    offset_start: int | None = None
+    offset_end: int | None = None
+    text_snippet: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,9 +41,7 @@ class ExtractionField:
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.confidence <= 1.0:
-            raise ValueError(
-                f"confidence must be between 0.0 and 1.0, got {self.confidence}"
-            )
+            raise ValueError(f"confidence must be between 0.0 and 1.0, got {self.confidence}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +58,7 @@ class ExtractionResult:
     fields: dict[str, ExtractionField]
     extractor_name: str
     extractor_version: str
-    raw_text: Optional[str] = None
+    raw_text: str | None = None
 
 
 class Extractor(Protocol):

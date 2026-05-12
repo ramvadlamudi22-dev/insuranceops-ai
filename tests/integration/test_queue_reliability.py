@@ -6,8 +6,7 @@ Requires: Redis (via service containers or compose.test.yml).
 from __future__ import annotations
 
 import json
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -89,11 +88,11 @@ class TestQueueReliability:
     async def test_delayed_task_matures(self, redis_client) -> None:
         """Task scheduled for past is moved to ready by scheduler."""
         payload = {"task_id": "test-4", "action": "delayed"}
-        past = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        past = datetime(2020, 1, 1, tzinfo=UTC)
         await schedule(redis_client, payload, run_at=past)
 
         # Mature tasks with current time
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         promoted = await mature_tasks(redis_client, now)
         assert promoted == 1
 
@@ -105,9 +104,7 @@ class TestQueueReliability:
     async def test_dlq_on_max_attempts(self, redis_client) -> None:
         """Task exceeding max attempts goes to DLQ."""
         payload = {"task_id": "test-5", "action": "fail"}
-        payload_bytes = json.dumps(
-            payload, separators=(",", ":"), default=str
-        ).encode("utf-8")
+        payload_bytes = json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8")
 
         # Simulate moving to DLQ after max attempts
         await move_to_dlq(redis_client, payload_bytes)

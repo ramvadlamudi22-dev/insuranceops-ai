@@ -7,12 +7,9 @@ and deterministic UUIDs produces identical AuditEvent hashes.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
-import pytest
-
-from insuranceops.domain.audit import AuditEvent, compute_event_hash
-from insuranceops.workflows.extractors.base import ExtractionField, ExtractionResult
+from insuranceops.domain.audit import compute_event_hash
 from insuranceops.workflows.extractors.stub import StubExtractor
 from insuranceops.workflows.validators.base import ReferenceData
 from insuranceops.workflows.validators.rules import RuleBasedValidator
@@ -127,9 +124,7 @@ class TestReplayDeterminism:
         run_id = uuid.UUID("00000000-0000-4000-8000-000000000100")
 
         # Generate deterministic event IDs for both runs
-        event_ids = [
-            uuid.UUID(f"00000000-0000-4000-8000-{i:012d}") for i in range(1, 6)
-        ]
+        event_ids = [uuid.UUID(f"00000000-0000-4000-8000-{i:012d}") for i in range(1, 6)]
 
         # Run 1
         hashes_1 = _run_workflow_and_collect_hashes(
@@ -143,5 +138,5 @@ class TestReplayDeterminism:
 
         # All hashes must match
         assert len(hashes_1) == len(hashes_2) == 5
-        for i, (h1, h2) in enumerate(zip(hashes_1, hashes_2)):
+        for i, (h1, h2) in enumerate(zip(hashes_1, hashes_2, strict=True)):
             assert h1 == h2, f"Hash mismatch at event index {i}"

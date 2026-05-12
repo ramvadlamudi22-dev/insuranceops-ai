@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal, Optional, Protocol
+from typing import Any, Literal, Protocol
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,9 +21,9 @@ class StepResult:
     """
 
     status: Literal["succeeded", "failed_retryable", "failed_terminal", "escalate"]
-    output: Optional[dict[str, Any]] = None
-    error_code: Optional[str] = None
-    error_detail: Optional[str] = None
+    output: dict[str, Any] | None = None
+    error_code: str | None = None
+    error_detail: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import select, update
@@ -25,7 +25,7 @@ class OutboxRepository:
         return model
 
     async def get_pending(
-        self, limit: int = 100, now: Optional[datetime] = None
+        self, limit: int = 100, now: datetime | None = None
     ) -> Sequence[TasksOutboxModel]:
         """Get undelivered outbox entries ready for relay."""
         query = (
@@ -49,9 +49,7 @@ class OutboxRepository:
         result = await self._session.execute(stmt)
         return result.rowcount == 1  # type: ignore[union-attr]
 
-    async def increment_attempts(
-        self, outbox_id: int, error: str
-    ) -> None:
+    async def increment_attempts(self, outbox_id: int, error: str) -> None:
         """Increment the attempt counter and record the error."""
         stmt = (
             update(TasksOutboxModel)
@@ -63,9 +61,7 @@ class OutboxRepository:
         )
         await self._session.execute(stmt)
 
-    async def get_by_workflow_run(
-        self, workflow_run_id: UUID
-    ) -> Sequence[TasksOutboxModel]:
+    async def get_by_workflow_run(self, workflow_run_id: UUID) -> Sequence[TasksOutboxModel]:
         """Get outbox entries for a workflow run."""
         result = await self._session.execute(
             select(TasksOutboxModel)

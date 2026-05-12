@@ -7,9 +7,10 @@ OpenTelemetry tracing. Otherwise provides no-op span context manager and decorat
 from __future__ import annotations
 
 import os
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Callable, Generator, TypeVar
+from typing import Any, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 

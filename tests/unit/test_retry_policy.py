@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from random import Random
 
-import pytest
-
 from insuranceops.workflows.retry import RetryPolicy, compute_backoff_delay
 
 

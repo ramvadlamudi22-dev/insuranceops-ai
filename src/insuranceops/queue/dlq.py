@@ -28,9 +28,7 @@ async def move_to_dlq(client: redis.Redis, payload_bytes: bytes) -> int:
     return length
 
 
-async def list_dlq(
-    client: redis.Redis, start: int = 0, count: int = 50
-) -> list[bytes]:
+async def list_dlq(client: redis.Redis, start: int = 0, count: int = 50) -> list[bytes]:
     """List entries in the dead letter queue.
 
     Args:

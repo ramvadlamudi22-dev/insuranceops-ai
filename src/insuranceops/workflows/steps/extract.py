@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,8 +54,7 @@ class ExtractStepHandler:
                     status="failed_retryable",
                     error_code="PAYLOAD_NOT_FOUND",
                     error_detail=(
-                        f"Payload not found for document {doc_id} "
-                        f"(ref: {doc.payload_ref})."
+                        f"Payload not found for document {doc_id} (ref: {doc.payload_ref})."
                     ),
                 )
             except OSError as e:

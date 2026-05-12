@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -20,24 +19,30 @@ class WorkflowRunState(Enum):
     cancelled = "cancelled"
 
 
-TERMINAL_STATES = frozenset({
-    WorkflowRunState.completed,
-    WorkflowRunState.failed,
-    WorkflowRunState.cancelled,
-})
-
-VALID_TRANSITIONS: dict[WorkflowRunState, frozenset[WorkflowRunState]] = {
-    WorkflowRunState.pending: frozenset({WorkflowRunState.running}),
-    WorkflowRunState.running: frozenset({
-        WorkflowRunState.awaiting_human,
+TERMINAL_STATES = frozenset(
+    {
         WorkflowRunState.completed,
         WorkflowRunState.failed,
         WorkflowRunState.cancelled,
-    }),
-    WorkflowRunState.awaiting_human: frozenset({
-        WorkflowRunState.running,
-        WorkflowRunState.cancelled,
-    }),
+    }
+)
+
+VALID_TRANSITIONS: dict[WorkflowRunState, frozenset[WorkflowRunState]] = {
+    WorkflowRunState.pending: frozenset({WorkflowRunState.running}),
+    WorkflowRunState.running: frozenset(
+        {
+            WorkflowRunState.awaiting_human,
+            WorkflowRunState.completed,
+            WorkflowRunState.failed,
+            WorkflowRunState.cancelled,
+        }
+    ),
+    WorkflowRunState.awaiting_human: frozenset(
+        {
+            WorkflowRunState.running,
+            WorkflowRunState.cancelled,
+        }
+    ),
     WorkflowRunState.completed: frozenset(),
     WorkflowRunState.failed: frozenset(),
     WorkflowRunState.cancelled: frozenset(),
@@ -68,10 +73,10 @@ class WorkflowRun:
     updated_at: datetime
     deadline_at: datetime
     created_by: str
-    current_step_id: Optional[UUID] = None
-    reference_data_snapshot_id: Optional[UUID] = None
-    last_error_code: Optional[str] = None
-    last_error_detail: Optional[str] = None
+    current_step_id: UUID | None = None
+    reference_data_snapshot_id: UUID | None = None
+    last_error_code: str | None = None
+    last_error_detail: str | None = None
 
     def transition_to(self, target: WorkflowRunState) -> None:
         """Transition the WorkflowRun to a new state.

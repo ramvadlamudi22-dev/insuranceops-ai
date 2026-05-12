@@ -12,12 +12,11 @@ from __future__ import annotations
 
 import os
 import time
-import uuid
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from insuranceops.domain.audit import compute_event_hash
@@ -65,8 +64,8 @@ async def append_audit_event(
     event_type: str,
     actor: str,
     payload: dict[str, Any],
-    step_id: Optional[UUID] = None,
-    step_attempt_id: Optional[UUID] = None,
+    step_id: UUID | None = None,
+    step_attempt_id: UUID | None = None,
 ) -> AuditEventModel:
     """Append a new audit event to the hash chain for a workflow run.
 
@@ -88,8 +87,7 @@ async def append_audit_event(
     # Lock the workflow run row to serialize chain writes
     await session.execute(
         text(
-            "SELECT workflow_run_id FROM workflow_runs "
-            "WHERE workflow_run_id = :wrid FOR UPDATE"
+            "SELECT workflow_run_id FROM workflow_runs WHERE workflow_run_id = :wrid FOR UPDATE"
         ).bindparams(wrid=workflow_run_id)
     )
 
@@ -106,7 +104,7 @@ async def append_audit_event(
 
     # Generate IDs and timestamp
     audit_event_id = uuid7()
-    occurred_at = datetime.now(timezone.utc)
+    occurred_at = datetime.now(UTC)
 
     # Compute the event hash using the canonical formula
     event_hash = compute_event_hash(

@@ -7,9 +7,7 @@ tampered events, and missing events.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from insuranceops.domain.audit import AuditEvent, compute_event_hash
 
@@ -17,7 +15,7 @@ from insuranceops.domain.audit import AuditEvent, compute_event_hash
 def _build_chain(count: int) -> list[AuditEvent]:
     """Build a valid chain of audit events for testing."""
     run_id = uuid.UUID("00000000-0000-4000-8000-000000000100")
-    frozen_time = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+    frozen_time = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
     events: list[AuditEvent] = []
     prev_hash = None
 

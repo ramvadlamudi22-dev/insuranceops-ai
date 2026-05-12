@@ -5,10 +5,8 @@ from __future__ import annotations
 import pytest
 
 from insuranceops.domain.escalations import EscalationState
-from insuranceops.domain.escalations import VALID_TRANSITIONS as ESCALATION_TRANSITIONS
 from insuranceops.domain.escalations import validate_transition as validate_escalation
 from insuranceops.domain.workflow_runs import WorkflowRunState
-from insuranceops.domain.workflow_runs import VALID_TRANSITIONS as RUN_TRANSITIONS
 from insuranceops.domain.workflow_runs import validate_transition as validate_run
 
 

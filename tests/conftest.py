@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from random import Random
 
 import pytest
@@ -24,7 +24,7 @@ class Clock:
 @pytest.fixture()
 def frozen_clock() -> Clock:
     """Provide a fixed datetime at 2025-01-15T10:00:00Z."""
-    return Clock(_fixed=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc))
+    return Clock(_fixed=datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC))
 
 
 @pytest.fixture()
@@ -61,9 +61,7 @@ def sample_document_bytes() -> bytes:
 def sample_invalid_document_bytes() -> bytes:
     """Return document content with missing/invalid fields for testing."""
     return (
-        b"Subject: Insurance Inquiry\n"
-        b"Date: unknown\n"
-        b"Notes: Customer called about their policy.\n"
+        b"Subject: Insurance Inquiry\nDate: unknown\nNotes: Customer called about their policy.\n"
     )
 
 

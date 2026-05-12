@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,9 +31,7 @@ def compute_key_hash(pepper: str, token: str) -> bytes:
     return hashlib.sha256((pepper + token).encode("utf-8")).digest()
 
 
-async def authenticate_api_key(
-    token: str, session: AsyncSession, pepper: str
-) -> ApiKeyPrincipal:
+async def authenticate_api_key(token: str, session: AsyncSession, pepper: str) -> ApiKeyPrincipal:
     """Authenticate a raw API key token.
 
     Computes sha256(pepper || token), looks up in api_keys table by key_hash,
@@ -44,9 +42,7 @@ async def authenticate_api_key(
     """
     key_hash = compute_key_hash(pepper, token)
 
-    result = await session.execute(
-        select(ApiKeyModel).where(ApiKeyModel.key_hash == key_hash)
-    )
+    result = await session.execute(select(ApiKeyModel).where(ApiKeyModel.key_hash == key_hash))
     api_key = result.scalar_one_or_none()
 
     if api_key is None:
@@ -55,7 +51,7 @@ async def authenticate_api_key(
     if api_key.revoked_at is not None:
         raise ValueError("API key has been revoked")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if api_key.expires_at is not None and api_key.expires_at <= now:
         raise ValueError("API key has expired")
 

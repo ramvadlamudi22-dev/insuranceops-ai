@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import pytest
-
-from insuranceops.domain.audit import AuditEvent, canonical_json, compute_event_hash
+from insuranceops.domain.audit import canonical_json, compute_event_hash
 
 
 class TestComputeEventHash:
@@ -21,7 +19,7 @@ class TestComputeEventHash:
             actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={"key": "value"},
-            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
+            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC),
             prev_event_hash=None,
         )
         h1 = compute_event_hash(**kwargs)
@@ -36,7 +34,7 @@ class TestComputeEventHash:
             workflow_run_id=uuid.UUID("00000000-0000-4000-8000-000000000010"),
             actor="worker:orchestrator",
             payload={"key": "value"},
-            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
+            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC),
             prev_event_hash=None,
         )
         h1 = compute_event_hash(event_type="workflow_run.started", **base)
@@ -51,7 +49,7 @@ class TestComputeEventHash:
             actor="worker:orchestrator",
             event_type="workflow_run.started",
             payload={},
-            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
+            occurred_at=datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC),
             prev_event_hash=None,
         )
         assert isinstance(h, bytes)
@@ -63,7 +61,7 @@ class TestChainLinkage:
 
     def test_chain_linkage(self) -> None:
         """Second event's prev_event_hash equals first event's event_hash."""
-        ts = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
         run_id = uuid.UUID("00000000-0000-4000-8000-000000000010")
 
         first_hash = compute_event_hash(
@@ -111,7 +109,7 @@ class TestTamperDetection:
 
     def test_tamper_detection(self) -> None:
         """Changing any field in an event makes recomputed hash mismatch stored hash."""
-        ts = datetime(2025, 1, 15, 10, 0, 0, tzinfo=timezone.utc)
+        ts = datetime(2025, 1, 15, 10, 0, 0, tzinfo=UTC)
         event_id = uuid.UUID("00000000-0000-4000-8000-000000000001")
         run_id = uuid.UUID("00000000-0000-4000-8000-000000000010")
 

@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import Any
 
 import redis.asyncio as redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -50,7 +49,7 @@ async def reaper_loop(
         try:
             await asyncio.wait_for(shutdown_event.wait(), timeout=REAPER_INTERVAL_S)
             break  # shutdown requested
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass  # normal timeout, continue loop
 
     logger.info("reaper_stopped")

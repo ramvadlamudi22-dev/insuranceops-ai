@@ -15,11 +15,11 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     SmallInteger,
-    String,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -349,9 +349,7 @@ class ApiKeyModel(Base):
 
     __table_args__ = (
         CheckConstraint("octet_length(key_hash) = 32", name="ck_api_keys_hash_len"),
-        CheckConstraint(
-            "role IN ('operator','supervisor','viewer')", name="ck_api_keys_role"
-        ),
+        CheckConstraint("role IN ('operator','supervisor','viewer')", name="ck_api_keys_role"),
         Index("idx_api_keys_role_active", "role", postgresql_where="revoked_at IS NULL"),
     )
 
@@ -373,8 +371,6 @@ class UserModel(Base):
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     __table_args__ = (
-        CheckConstraint(
-            "role IN ('operator','supervisor','viewer')", name="ck_users_role"
-        ),
+        CheckConstraint("role IN ('operator','supervisor','viewer')", name="ck_users_role"),
         Index("idx_users_role_active", "role", postgresql_where="disabled_at IS NULL"),
     )

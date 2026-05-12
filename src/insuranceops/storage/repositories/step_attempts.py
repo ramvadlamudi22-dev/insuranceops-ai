@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import select
@@ -17,12 +17,10 @@ class StepAttemptRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_by_id(self, step_attempt_id: UUID) -> Optional[StepAttemptModel]:
+    async def get_by_id(self, step_attempt_id: UUID) -> StepAttemptModel | None:
         """Get a step attempt by its ID."""
         result = await self._session.execute(
-            select(StepAttemptModel).where(
-                StepAttemptModel.step_attempt_id == step_attempt_id
-            )
+            select(StepAttemptModel).where(StepAttemptModel.step_attempt_id == step_attempt_id)
         )
         return result.scalar_one_or_none()
 
@@ -41,7 +39,7 @@ class StepAttemptRepository:
         )
         return result.scalars().all()
 
-    async def get_latest_for_step(self, step_id: UUID) -> Optional[StepAttemptModel]:
+    async def get_latest_for_step(self, step_id: UUID) -> StepAttemptModel | None:
         """Get the latest attempt for a step."""
         result = await self._session.execute(
             select(StepAttemptModel)

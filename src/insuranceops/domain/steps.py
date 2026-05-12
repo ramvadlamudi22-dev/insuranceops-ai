@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from uuid import UUID
 
 
@@ -32,13 +31,11 @@ class Step:
     escalate_on_failure: bool
     state: StepState
     created_at: datetime
-    started_at: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    ended_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if self.step_index < 0:
             raise ValueError(f"step_index must be >= 0, got {self.step_index}")
         if self.max_attempts < 1 or self.max_attempts > 10:
-            raise ValueError(
-                f"max_attempts must be between 1 and 10, got {self.max_attempts}"
-            )
+            raise ValueError(f"max_attempts must be between 1 and 10, got {self.max_attempts}")

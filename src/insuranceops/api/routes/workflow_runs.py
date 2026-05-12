@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Ensure workflow definitions are registered
+import insuranceops.workflows.definitions  # noqa: F401
 from insuranceops.api.deps import get_db_session
 from insuranceops.api.schemas.workflow_runs import (
     AuditEventResponse,
@@ -27,12 +28,8 @@ from insuranceops.storage.models import (
     WorkflowRunDocumentModel,
     WorkflowRunModel,
 )
-from insuranceops.storage.repositories.audit import AuditRepository
 from insuranceops.storage.repositories.workflow_runs import WorkflowRunRepository
 from insuranceops.workflows.registry import registry
-
-# Ensure workflow definitions are registered
-import insuranceops.workflows.definitions  # noqa: F401
 
 router = APIRouter(prefix="/v1/workflow-runs", tags=["workflow-runs"])
 
@@ -62,7 +59,7 @@ async def create_workflow_run(
         )
 
     workflow_version = definition.workflow_version
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     workflow_run_id = uuid.uuid4()
     deadline = now + timedelta(seconds=definition.deadline_seconds)
 
@@ -82,11 +79,13 @@ async def create_workflow_run(
 
     # Attach documents
     for doc_id in body.document_ids:
-        session.add(WorkflowRunDocumentModel(
-            workflow_run_id=workflow_run_id,
-            document_id=doc_id,
-            attached_at=now,
-        ))
+        session.add(
+            WorkflowRunDocumentModel(
+                workflow_run_id=workflow_run_id,
+                document_id=doc_id,
+                attached_at=now,
+            )
+        )
 
     # Create Steps from the workflow definition
     step_models: list[StepModel] = []
@@ -227,8 +226,8 @@ async def get_workflow_run(
 )
 async def get_workflow_run_events(
     workflow_run_id: uuid.UUID,
-    event_type: Optional[str] = Query(None),
-    cursor: Optional[str] = Query(None),
+    event_type: str | None = Query(None),
+    cursor: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(get_db_session),
     principal: ApiKeyPrincipal = Depends(requires_role("operator", "supervisor", "viewer")),
@@ -260,7 +259,7 @@ async def get_workflow_run_events(
             cursor_seq = int(cursor)
             query = query.where(AuditEventModel.seq_in_run > cursor_seq)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid cursor")
+            raise HTTPException(status_code=400, detail="Invalid cursor") from None
 
     query = query.limit(limit + 1)  # fetch one extra to detect next page
 
@@ -316,7 +315,7 @@ async def cancel_workflow_run(
             detail=f"Workflow run in state '{run.state}' cannot be cancelled",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     updated = await repo.update_state_optimistic(
         workflow_run_id=workflow_run_id,
         expected_version=run.version,

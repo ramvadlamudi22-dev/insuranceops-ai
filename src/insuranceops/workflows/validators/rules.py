@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from typing import Any
 
 from insuranceops.workflows.extractors.base import ExtractionResult
 from insuranceops.workflows.validators.base import (
@@ -62,9 +61,7 @@ class RuleBasedValidator:
         """Validator version."""
         return "1.0.0"
 
-    def validate(
-        self, result: ExtractionResult, ref: ReferenceData
-    ) -> ValidationOutcome:
+    def validate(self, result: ExtractionResult, ref: ReferenceData) -> ValidationOutcome:
         """Validate extraction result against business rules.
 
         Args:
@@ -129,8 +126,7 @@ class RuleBasedValidator:
                         code="date_of_loss_invalid",
                         field="date_of_loss",
                         message=(
-                            f"Date of loss '{date_value}' could not be parsed "
-                            f"as a valid date."
+                            f"Date of loss '{date_value}' could not be parsed as a valid date."
                         ),
                         detail={"value": date_value},
                     )

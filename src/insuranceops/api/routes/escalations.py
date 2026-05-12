@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, update
@@ -32,14 +31,12 @@ router = APIRouter(prefix="/v1/escalations", tags=["escalations"])
 
 @router.get("", response_model=EscalationListResponse)
 async def list_escalations(
-    state: Optional[str] = Query(None),
-    workflow_name: Optional[str] = Query(None),
-    cursor: Optional[str] = Query(None),
+    state: str | None = Query(None),
+    workflow_name: str | None = Query(None),
+    cursor: str | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(get_db_session),
-    principal: ApiKeyPrincipal = Depends(
-        requires_role("operator", "supervisor", "viewer")
-    ),
+    principal: ApiKeyPrincipal = Depends(requires_role("operator", "supervisor", "viewer")),
 ) -> EscalationListResponse:
     """List escalation cases with optional filters and cursor pagination."""
     query = select(EscalationCaseModel).order_by(EscalationCaseModel.created_at)
@@ -58,7 +55,7 @@ async def list_escalations(
             cursor_dt = datetime.fromisoformat(cursor)
             query = query.where(EscalationCaseModel.created_at > cursor_dt)
         except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid cursor")
+            raise HTTPException(status_code=400, detail="Invalid cursor") from None
 
     query = query.limit(limit + 1)
     result = await session.execute(query)
@@ -103,7 +100,7 @@ async def claim_escalation(
     principal: ApiKeyPrincipal = Depends(requires_role("operator", "supervisor")),
 ) -> EscalationClaimResponse:
     """Atomically claim an open escalation with optimistic guard."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Atomic claim: update only if state is 'open'
     stmt = (
@@ -123,9 +120,7 @@ async def claim_escalation(
     if result.rowcount == 0:  # type: ignore[union-attr]
         # Check if escalation exists at all
         check = await session.execute(
-            select(EscalationCaseModel).where(
-                EscalationCaseModel.escalation_id == escalation_id
-            )
+            select(EscalationCaseModel).where(EscalationCaseModel.escalation_id == escalation_id)
         )
         esc = check.scalar_one_or_none()
         if esc is None:
@@ -169,9 +164,7 @@ async def resolve_escalation(
 ) -> EscalationResponse:
     """Resolve a claimed escalation, create synthetic StepAttempt, resume WorkflowRun."""
     result = await session.execute(
-        select(EscalationCaseModel).where(
-            EscalationCaseModel.escalation_id == escalation_id
-        )
+        select(EscalationCaseModel).where(EscalationCaseModel.escalation_id == escalation_id)
     )
     esc = result.scalar_one_or_none()
     if esc is None:
@@ -188,7 +181,7 @@ async def resolve_escalation(
             detail="Escalation is claimed by a different actor",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Update escalation
     esc.state = "resolved"
@@ -216,9 +209,7 @@ async def resolve_escalation(
 
     # Resume workflow run - transition from awaiting_human back to running
     run_result = await session.execute(
-        select(WorkflowRunModel).where(
-            WorkflowRunModel.workflow_run_id == esc.workflow_run_id
-        )
+        select(WorkflowRunModel).where(WorkflowRunModel.workflow_run_id == esc.workflow_run_id)
     )
     run = run_result.scalar_one_or_none()
     if run and run.state == "awaiting_human":
@@ -278,9 +269,7 @@ async def reject_escalation(
 ) -> EscalationResponse:
     """Reject a claimed escalation, transition WorkflowRun to failed."""
     result = await session.execute(
-        select(EscalationCaseModel).where(
-            EscalationCaseModel.escalation_id == escalation_id
-        )
+        select(EscalationCaseModel).where(EscalationCaseModel.escalation_id == escalation_id)
     )
     esc = result.scalar_one_or_none()
     if esc is None:
@@ -297,7 +286,7 @@ async def reject_escalation(
             detail="Escalation is claimed by a different actor",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Update escalation
     esc.state = "rejected"
@@ -310,9 +299,7 @@ async def reject_escalation(
 
     # Transition workflow run to failed
     run_result = await session.execute(
-        select(WorkflowRunModel).where(
-            WorkflowRunModel.workflow_run_id == esc.workflow_run_id
-        )
+        select(WorkflowRunModel).where(WorkflowRunModel.workflow_run_id == esc.workflow_run_id)
     )
     run = run_result.scalar_one_or_none()
     if run and run.state in ("running", "awaiting_human"):
