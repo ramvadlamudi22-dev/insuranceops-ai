@@ -1332,7 +1332,7 @@ Clients that need to tell the two cases apart may inspect the status code.
 
 The endpoint enforces three hard limits at the boundary:
 
-- Maximum payload size is 25 MiB per Document at Phase 1.
+- Maximum payload size is 20 MiB per Document at Phase 1.
   Requests exceeding this return `413 Payload Too Large` without persisting anything.
 - Content type must match a whitelist: `application/pdf`, `image/png`, `image/jpeg`,
   `image/tiff`, `text/plain`, `text/csv`, `application/json`.
@@ -3045,7 +3045,7 @@ An ambient scheduler would be reconsidered only for deployment-level tasks
   with enough CPU, memory, and disk for the expected Document volume and audit write rate.
 - Network between API, worker, Postgres, and Redis is low-latency and reliable
   (single host or co-located hosts inside a private network).
-- Document payloads at Phase 1 fit the 25 MiB cap;
+- Document payloads at Phase 1 fit the 20 MiB cap;
   the workloads targeting this platform are claim documents, not bulk archives.
 - The Phase 1 operator count is small (single-digit operators)
   and EscalationCase throughput is measured in cases per day, not cases per second.

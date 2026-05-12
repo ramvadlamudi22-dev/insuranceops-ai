@@ -250,7 +250,7 @@ Columns:
 | `LOG_FORMAT`                   | no       | `json` in non-local, `console` in local   | structlog output format.                                                     | app reads          |
 | `SECRET_KEY`                   | yes      | none (32+ bytes high-entropy)             | Signs session cookies; used when operator UI is enabled.                    | platform provides  |
 | `API_KEY_HASH_PEPPER`          | yes      | none (32+ bytes high-entropy)             | Application-layer pepper mixed into API key hash: sha256(pepper || token).  | platform provides  |
-| `MAX_REQUEST_BYTES`            | no       | `26214400` (25 MiB)                       | Hard request body cap; exceeded requests return `413`.                       | app reads          |
+| `MAX_REQUEST_BYTES`            | no       | `20971520` (20 MiB)                       | Hard request body cap; exceeded requests return `413`.                       | app reads          |
 | `WORKER_CONCURRENCY`           | no       | `1`                                       | Number of inflight Tasks a single worker process handles in parallel.        | app reads          |
 | `RETRY_MAX_ATTEMPTS_DEFAULT`   | no       | `3`                                       | Default `max_attempts` per Step when the Workflow does not override.         | app reads          |
 | `RETRY_BACKOFF_BASE_S`         | no       | `2`                                       | Base delay for retry backoff.                                                | app reads          |
