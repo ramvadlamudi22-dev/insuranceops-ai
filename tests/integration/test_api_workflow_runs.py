@@ -34,10 +34,25 @@ def app():
 
 @pytest.fixture()
 async def client(app):
-    """Create an async test client."""
+    """Create an async test client with app state initialized."""
+    from insuranceops.queue.redis_client import create_redis_pool
+    from insuranceops.storage.db import create_engine, create_session_factory
+
+    settings = app.state.settings
+    engine = create_engine(settings.DATABASE_URL)
+    session_factory = create_session_factory(engine)
+    redis = await create_redis_pool(settings.REDIS_URL)
+
+    app.state.engine = engine
+    app.state.session_factory = session_factory
+    app.state.redis = redis
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+    await redis.aclose()
+    await engine.dispose()
 
 
 def _mock_operator():

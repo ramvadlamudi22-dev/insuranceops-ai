@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install mypy pydantic sqlalchemy redis structlog fastapi
+      - run: pip install mypy pydantic pydantic-settings sqlalchemy redis structlog fastapi
       - run: mypy src/ --ignore-missing-imports
 
   test:
@@ -47,6 +47,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
+      - run: alembic -c migrations/alembic.ini upgrade head
+        env:
+          DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/insuranceops_test"
       - run: pytest tests/ -v --tb=short
         env:
           DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/insuranceops_test"
