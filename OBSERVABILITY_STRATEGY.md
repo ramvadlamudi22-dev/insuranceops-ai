@@ -344,6 +344,10 @@ reviewed skeptically.
   Observes the wall-clock time from state `pending` to terminal state. Buckets:
   `1, 5, 15, 30, 60, 300, 900, 1800, 3600, 10800, 86400`.
   **Consumer.** Latency SLO panel per workflow.
+- `workflow_runs_running_total` (gauge). Labels: `workflow_name`.
+  Observes the current count of WorkflowRuns in `running` state.
+  **Consumer.** Throughput dashboard; alert on stagnation (no state changes
+  for longer than the expected Step duration).
 
 ### Step execution
 
@@ -363,6 +367,12 @@ reviewed skeptically.
   Counts every retry scheduling. This is the retry-visibility surface described in
   `## Retry visibility`.
   **Consumer.** Retry storm detection; alert on sudden per-reason increase.
+- `step_attempts_terminal_total` (counter). Labels: `workflow_name`, `step_name`,
+  `reason`.
+  Counts terminal StepAttempt failures by reason code. Distinct from
+  `step_attempts_total{outcome="failed_terminal"}` in that it carries the typed
+  `reason` label for per-cause alerting.
+  **Consumer.** Failure-cause breakdown panel; alert on unexpected reason spikes.
 
 ### Queue substrate
 
@@ -388,6 +398,17 @@ reviewed skeptically.
   Counts Tasks reclaimed from a stale `inflight` list by the reaper loop.
   **Consumer.** Worker-health panel; sustained nonzero suggests a crashing worker.
 
+### Outbox
+
+- `outbox_drain_lag_seconds` (histogram). No labels.
+  Observes the lag between `tasks_outbox` row creation and successful Redis delivery.
+  Buckets: `0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120`.
+  **Consumer.** Outbox health panel; alert on lag exceeding the documented budget.
+- `outbox_drain_batch_seconds` (histogram). No labels.
+  Observes the wall-clock time per outbox drain batch.
+  Buckets: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5`.
+  **Consumer.** Outbox throughput panel; triage surface for drain bottlenecks.
+
 ### Escalation
 
 - `escalations_opened_total` (counter). Labels: `workflow_name`, `step_name`.
@@ -401,6 +422,10 @@ reviewed skeptically.
   Observed on the transition out of `open` or `claimed`. Buckets span the SLA
   classes: `60, 300, 900, 1800, 3600, 10800, 21600, 43200, 86400, 172800`.
   **Consumer.** SLA p95 panel per workflow.
+- `escalations_claimed_expired_total` (counter). Labels: `workflow_name`.
+  Counts claim-TTL-expired un-claims (cases returned to `open` by the sweeper).
+  **Consumer.** Operator capacity panel; sustained nonzero indicates understaffing
+  or distracted operators.
 
 ### Audit
 
