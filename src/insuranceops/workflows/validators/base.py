@@ -15,13 +15,13 @@ class ValidationReason:
 
     Attributes:
         code: Machine-readable error code (e.g., "claim_number_missing").
-        field: The field that failed validation (if applicable).
+        field_name: The field that failed validation (if applicable).
         message: Human-readable description of the failure.
         detail: Additional context for debugging or display.
     """
 
     code: str
-    field: str | None = None
+    field_name: str | None = None
     message: str = ""
     detail: dict[str, Any] = field(default_factory=dict)
 

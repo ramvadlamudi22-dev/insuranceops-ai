@@ -6,6 +6,7 @@ import time
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
@@ -59,7 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # ──────────────────────────────────────────────────────────────────────────
 
     @app.middleware("http")
-    async def correlation_id_middleware(request: Request, call_next) -> Response:
+    async def correlation_id_middleware(request: Request, call_next: Any) -> Response:
         """Attach a correlation ID to each request."""
         cid = request.headers.get("X-Correlation-Id")
         if not cid:
@@ -71,7 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     @app.middleware("http")
-    async def request_size_limit_middleware(request: Request, call_next) -> Response:
+    async def request_size_limit_middleware(request: Request, call_next: Any) -> Response:
         """Reject requests exceeding MAX_REQUEST_BYTES."""
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > settings.MAX_REQUEST_BYTES:
@@ -85,7 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return await call_next(request)
 
     @app.middleware("http")
-    async def request_timing_middleware(request: Request, call_next) -> Response:
+    async def request_timing_middleware(request: Request, call_next: Any) -> Response:
         """Record request duration and increment request counter."""
         start = time.perf_counter()
         response = await call_next(request)
@@ -105,14 +106,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # ──────────────────────────────────────────────────────────────────────────
 
     @app.exception_handler(404)
-    async def not_found_handler(request: Request, exc) -> JSONResponse:
+    async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(
             status_code=404,
             content={"error_code": "NOT_FOUND", "message": "Resource not found"},
         )
 
     @app.exception_handler(500)
-    async def internal_error_handler(request: Request, exc) -> JSONResponse:
+    async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
         return JSONResponse(
             status_code=500,
             content={"error_code": "INTERNAL_ERROR", "message": "Internal server error"},

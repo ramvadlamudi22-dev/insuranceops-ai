@@ -80,7 +80,7 @@ class RuleBasedValidator:
                 reasons=[
                     ValidationReason(
                         code="claim_number_missing",
-                        field="claim_number",
+                        field_name="claim_number",
                         message="Claim number is required but was not found in the document.",
                         detail={},
                     )
@@ -95,7 +95,7 @@ class RuleBasedValidator:
                 reasons=[
                     ValidationReason(
                         code="policy_number_missing",
-                        field="policy_number",
+                        field_name="policy_number",
                         message="Policy number is required but was not found in the document.",
                         detail={},
                     )
@@ -108,7 +108,7 @@ class RuleBasedValidator:
             correctable_reasons.append(
                 ValidationReason(
                     code="policy_number_format_invalid",
-                    field="policy_number",
+                    field_name="policy_number",
                     message=(
                         f"Policy number '{policy_value}' does not match "
                         f"the expected format [A-Z]{{2,3}}-\\d{{6,10}}."
@@ -124,7 +124,7 @@ class RuleBasedValidator:
                 correctable_reasons.append(
                     ValidationReason(
                         code="date_of_loss_invalid",
-                        field="date_of_loss",
+                        field_name="date_of_loss",
                         message=(
                             f"Date of loss '{date_value}' could not be parsed as a valid date."
                         ),
@@ -138,9 +138,9 @@ class RuleBasedValidator:
                 status="fail_correctable",
                 reasons=correctable_reasons,
                 overrides_requested={
-                    reason.field: reason.code
+                    reason.field_name: reason.code
                     for reason in correctable_reasons
-                    if reason.field is not None
+                    if reason.field_name is not None
                 },
             )
 

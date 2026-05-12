@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -23,7 +24,7 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession, None]
         await session.commit()
 
 
-async def get_redis(request: Request):
+async def get_redis(request: Request) -> Any:
     """Return the Redis client from app state."""
     return request.app.state.redis
 

@@ -54,10 +54,6 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = ["asyncpg.*", "redis.*", "structlog.*", "prometheus_client.*", "uvicorn.*"]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

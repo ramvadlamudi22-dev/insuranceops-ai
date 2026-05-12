@@ -135,6 +135,10 @@ async def _process_task(
                 await ack(redis_client, worker_id, payload_bytes)
                 return
 
+            assert step_attempt_id is not None
+            assert step_id is not None
+            assert workflow_run_id is not None
+
             attempt_repo = StepAttemptRepository(session)
             step_repo = StepRepository(session)
             run_repo = WorkflowRunRepository(session)
@@ -148,6 +152,10 @@ async def _process_task(
                 await move_to_dlq(redis_client, payload_bytes)
                 await ack(redis_client, worker_id, payload_bytes)
                 return
+
+            assert attempt is not None
+            assert step is not None
+            assert run is not None
 
             # Validate state - skip if already terminal
             if attempt.state in ("succeeded", "failed_terminal", "skipped"):

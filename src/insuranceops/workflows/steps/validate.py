@@ -93,7 +93,7 @@ class ValidateStepHandler:
             reasons_serialized = [
                 {
                     "code": r.code,
-                    "field": r.field,
+                    "field": r.field_name,
                     "message": r.message,
                     "detail": r.detail,
                 }
@@ -119,7 +119,7 @@ class ValidateStepHandler:
             reasons_serialized = [
                 {
                     "code": r.code,
-                    "field": r.field,
+                    "field": r.field_name,
                     "message": r.message,
                     "detail": r.detail,
                 }
