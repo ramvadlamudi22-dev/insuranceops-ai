@@ -167,6 +167,7 @@ async def _process_task(
                 step_id=step_id,
                 step_attempt_id=step_attempt_id,
                 payload=payload,
+                session=session,
             )
 
             now = datetime.now(timezone.utc)
@@ -285,6 +286,7 @@ async def _execute_step_handler(
     step_id: UUID,
     step_attempt_id: UUID,
     payload: dict[str, Any],
+    session: AsyncSession,
 ) -> dict[str, Any]:
     """Execute the appropriate step handler via the handler registry.
 
@@ -303,6 +305,9 @@ async def _execute_step_handler(
     document_ids_raw = payload.get("document_ids", [])
     document_ids = [UUID(d) if isinstance(d, str) else d for d in document_ids_raw]
 
+    # Load previous step outputs for step-to-step data flow
+    previous_outputs = await _load_previous_outputs(session, workflow_run_id, step_name)
+
     context = StepContext(
         workflow_run_id=workflow_run_id,
         step_id=step_id,
@@ -311,6 +316,7 @@ async def _execute_step_handler(
         workflow_name=payload.get("workflow_name", "unknown"),
         document_ids=document_ids,
         correlation_id=payload.get("correlation_id", ""),
+        previous_outputs=previous_outputs,
     )
 
     try:
@@ -324,9 +330,7 @@ async def _execute_step_handler(
         }
 
     try:
-        # Handlers that need a session will get one via their own mechanism;
-        # pass None since the worker session is managed at _process_task level.
-        result: StepResult = await handler.handle(context, None)  # type: ignore[arg-type]
+        result: StepResult = await handler.handle(context, session)
     except Exception as e:
         logger.error("handler_exception", handler_name=handler_name, error=str(e))
         return {
@@ -360,3 +364,66 @@ async def _execute_step_handler(
             "error_code": result.error_code,
             "error_detail": result.error_detail,
         }
+
+
+async def _load_previous_outputs(
+    session: AsyncSession,
+    workflow_run_id: UUID,
+    current_step_name: str,
+) -> dict[str, Any]:
+    """Load output_ref from all preceding succeeded steps.
+
+    Queries steps with step_index < current step's index that have
+    state='succeeded', then loads their latest step_attempt's output_ref.
+
+    Returns:
+        Dict mapping step_name -> output data for each preceding succeeded step.
+    """
+    from sqlalchemy import select
+
+    from insuranceops.storage.models import StepAttemptModel, StepModel
+
+    # Get current step to find its index
+    result = await session.execute(
+        select(StepModel).where(
+            StepModel.workflow_run_id == workflow_run_id,
+            StepModel.step_name == current_step_name,
+        )
+    )
+    current_step = result.scalar_one_or_none()
+    if current_step is None:
+        return {}
+
+    # Get all preceding steps that succeeded
+    result = await session.execute(
+        select(StepModel).where(
+            StepModel.workflow_run_id == workflow_run_id,
+            StepModel.step_index < current_step.step_index,
+            StepModel.state == "succeeded",
+        ).order_by(StepModel.step_index)
+    )
+    preceding_steps = result.scalars().all()
+
+    previous_outputs: dict[str, Any] = {}
+    for step in preceding_steps:
+        # Get the latest succeeded attempt for this step
+        attempt_result = await session.execute(
+            select(StepAttemptModel).where(
+                StepAttemptModel.step_id == step.step_id,
+                StepAttemptModel.state == "succeeded",
+            ).order_by(StepAttemptModel.step_attempt_number.desc()).limit(1)
+        )
+        attempt = attempt_result.scalar_one_or_none()
+        if attempt is not None and attempt.output_ref is not None:
+            # output_ref is stored as a JSON string or dict
+            import json
+
+            if isinstance(attempt.output_ref, str):
+                try:
+                    previous_outputs[step.step_name] = json.loads(attempt.output_ref)
+                except (json.JSONDecodeError, ValueError):
+                    previous_outputs[step.step_name] = attempt.output_ref
+            else:
+                previous_outputs[step.step_name] = attempt.output_ref
+
+    return previous_outputs

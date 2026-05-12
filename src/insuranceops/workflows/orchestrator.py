@@ -7,9 +7,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from insuranceops.audit.chain import append_audit_event
+from insuranceops.observability.metrics import workflow_run_duration_seconds
 from insuranceops.storage.models import (
     EscalationCaseModel,
     StepAttemptModel,
@@ -267,6 +269,25 @@ class WorkflowOrchestrator:
         else:
             raise ValueError(f"Unknown step result status: {step_result.status}")
 
+    async def _get_document_ids(
+        self, session: AsyncSession, workflow_run_id: UUID
+    ) -> list[str]:
+        """Get document IDs associated with a workflow run.
+
+        Args:
+            session: Active async session.
+            workflow_run_id: The workflow run to query.
+
+        Returns:
+            List of document ID strings.
+        """
+        result = await session.execute(
+            select(WorkflowRunDocumentModel.document_id).where(
+                WorkflowRunDocumentModel.workflow_run_id == workflow_run_id
+            )
+        )
+        return [str(row) for row in result.scalars().all()]
+
     async def _handle_succeeded(
         self,
         session: AsyncSession,
@@ -298,6 +319,14 @@ class WorkflowOrchestrator:
             workflow_run.version += 1
             workflow_run.updated_at = now
             await session.flush()
+
+            # Observe workflow run duration
+            duration = (now - workflow_run.created_at).total_seconds()
+            workflow_run_duration_seconds.labels(
+                workflow_name=workflow_run.workflow_name,
+                workflow_version=workflow_run.workflow_version,
+                terminal_state="completed",
+            ).observe(duration)
 
             await append_audit_event(
                 session=session,
@@ -340,6 +369,9 @@ class WorkflowOrchestrator:
                     handler_name = step_def.handler_name
                     break
 
+        # Get document_ids for the workflow run
+        document_ids = await self._get_document_ids(session, workflow_run.workflow_run_id)
+
         # Insert outbox row for next step
         outbox_entry = TasksOutboxModel(
             workflow_run_id=workflow_run.workflow_run_id,
@@ -354,6 +386,7 @@ class WorkflowOrchestrator:
                 "step_name": next_step.step_name,
                 "handler_name": handler_name,
                 "correlation_id": "",
+                "document_ids": document_ids,
             },
             scheduled_for=now,
             created_at=now,
@@ -430,6 +463,11 @@ class WorkflowOrchestrator:
                         handler_name = step_def.handler_name
                         break
 
+            # Get document_ids for the workflow run
+            document_ids = await self._get_document_ids(
+                session, workflow_run.workflow_run_id
+            )
+
             # Insert outbox row with scheduled_for
             outbox_entry = TasksOutboxModel(
                 workflow_run_id=workflow_run.workflow_run_id,
@@ -444,6 +482,7 @@ class WorkflowOrchestrator:
                     "step_name": current_step.step_name,
                     "handler_name": handler_name,
                     "correlation_id": "",
+                    "document_ids": document_ids,
                 },
                 scheduled_for=scheduled_for,
                 created_at=now,
@@ -539,6 +578,14 @@ class WorkflowOrchestrator:
         workflow_run.last_error_code = step_result.error_code
         workflow_run.last_error_detail = step_result.error_detail
         await session.flush()
+
+        # Observe workflow run duration
+        duration = (now - workflow_run.created_at).total_seconds()
+        workflow_run_duration_seconds.labels(
+            workflow_name=workflow_run.workflow_name,
+            workflow_version=workflow_run.workflow_version,
+            terminal_state="failed",
+        ).observe(duration)
 
         await append_audit_event(
             session=session,
@@ -751,6 +798,14 @@ class WorkflowOrchestrator:
         workflow_run.version += 1
         workflow_run.updated_at = now
         await session.flush()
+
+        # Observe workflow run duration
+        duration = (now - workflow_run.created_at).total_seconds()
+        workflow_run_duration_seconds.labels(
+            workflow_name=workflow_run.workflow_name,
+            workflow_version=workflow_run.workflow_version,
+            terminal_state="cancelled",
+        ).observe(duration)
 
         await append_audit_event(
             session=session,
