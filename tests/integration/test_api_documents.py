@@ -74,7 +74,7 @@ class TestDocumentIngest:
 
         viewer = ApiKeyPrincipal(api_key_id=str(uuid.uuid4()), role="viewer", label="test-viewer")
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=viewer,
         ):
@@ -94,7 +94,7 @@ class TestDocumentIngest:
 
         with (
             patch(
-                "insuranceops.api.deps.authenticate_api_key",
+                "insuranceops.security.rbac.authenticate_api_key",
                 new_callable=AsyncMock,
                 return_value=operator,
             ),

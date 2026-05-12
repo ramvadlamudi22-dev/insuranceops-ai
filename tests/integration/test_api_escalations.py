@@ -81,7 +81,7 @@ class TestEscalationsAPI:
         operator = _mock_operator()
 
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=operator,
         ):
@@ -107,7 +107,7 @@ class TestEscalationsAPI:
 
         with (
             patch(
-                "insuranceops.api.deps.authenticate_api_key",
+                "insuranceops.security.rbac.authenticate_api_key",
                 new_callable=AsyncMock,
                 return_value=operator,
             ),
@@ -130,7 +130,7 @@ class TestEscalationsAPI:
         esc_id = uuid.uuid4()
 
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=operator,
         ):
@@ -148,7 +148,7 @@ class TestEscalationsAPI:
         esc_id = uuid.uuid4()
 
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=supervisor,
         ):
@@ -166,7 +166,7 @@ class TestEscalationsAPI:
         esc_id = uuid.uuid4()
 
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=supervisor,
         ):
@@ -184,7 +184,7 @@ class TestEscalationsAPI:
         esc_id = uuid.uuid4()
 
         with patch(
-            "insuranceops.api.deps.authenticate_api_key",
+            "insuranceops.security.rbac.authenticate_api_key",
             new_callable=AsyncMock,
             return_value=viewer,
         ):
