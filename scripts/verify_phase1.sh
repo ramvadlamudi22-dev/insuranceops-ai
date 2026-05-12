@@ -90,7 +90,8 @@ if docker compose -f "$COMPOSE_FILE" ps api --status running &>/dev/null 2>&1; t
   RAW_TOKEN="verify-phase1-test-token-$(date +%s)"
   # The API hashes with sha256(pepper + token). Pepper is "dev-pepper-not-for-production"
   KEY_HASH=$(echo -n "dev-pepper-not-for-production${RAW_TOKEN}" | sha256sum | awk '{print $1}')
-  API_KEY_ID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+  API_KEY_ID=$(uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+  API_KEY_ID=$(echo "$API_KEY_ID" | tr '[:upper:]' '[:lower:]')
 
   docker compose -f "$COMPOSE_FILE" exec -T postgres psql -U postgres -d insuranceops -c \
     "INSERT INTO api_keys (api_key_id, key_hash, role, label, created_at)
