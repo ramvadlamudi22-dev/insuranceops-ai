@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/insuranceops"
     REDIS_URL: str = "redis://localhost:6379/0"
-    API_KEY_HASH_PEPPER: str
+    API_KEY_HASH_PEPPER: str = ""
     MAX_REQUEST_BYTES: int = 20_971_520
     WORKER_VISIBILITY_TIMEOUT_S: int = 60
     WORKER_CONCURRENCY: int = 1

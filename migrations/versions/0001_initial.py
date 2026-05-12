@@ -103,7 +103,7 @@ def upgrade() -> None:
             "metadata",
             JSONB,
             nullable=False,
-            server_default=sa.text("'{}'::jsonb"),
+            server_default=sa.text("'{}'"),
         ),
         sa.CheckConstraint(
             "octet_length(content_hash) = 32", name="ck_documents_content_hash_len"
@@ -213,7 +213,7 @@ def upgrade() -> None:
             JSONB,
             nullable=False,
             server_default=sa.text(
-                """'{"base_delay_s":2,"cap_s":60,"jitter":"full"}'::jsonb"""
+                """'{"base_delay_s":2,"cap_s":60,"jitter":"full"}'"""
             ),
         ),
         sa.Column(
@@ -445,7 +445,7 @@ def upgrade() -> None:
             "payload",
             JSONB,
             nullable=False,
-            server_default=sa.text("'{}'::jsonb"),
+            server_default=sa.text("'{}'"),
         ),
         sa.Column(
             "occurred_at",
