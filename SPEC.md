@@ -164,7 +164,7 @@ Each criterion names the artifact (test, metric, runbook) that confirms it.
   and under 300 ms for write endpoints,
   at 50 requests per second sustained on a single API pod
   backed by a single Postgres instance and a single Redis instance.
-  Confirmed by the `http_request_duration_seconds{route}` histogram
+  Confirmed by the `api_request_duration_seconds{route}` histogram
   evaluated over a 10 minute window in the load test.
 
 ### Test hermeticity and determinism
