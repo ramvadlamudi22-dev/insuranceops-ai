@@ -2528,7 +2528,7 @@ and is part of the authentication contract, not a middleware afterthought.
 Phase 1 supports two authenticators:
 
 - **API key** in `Authorization: Bearer <token>` for machine clients.
-  Keys are stored hashed (argon2id) in `api_keys.hashed_token`;
+  Keys are stored as `sha256(pepper || token)` in `api_keys.hashed_token`;
   the plaintext is visible only at creation time.
 - **Signed session cookie** for the narrow internal operator UI if one is built in Phase 3.
   The cookie is signed with an application secret, includes the user id and role,

@@ -388,7 +388,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 - **NFR-SECURITY-001**: All API traffic is served over TLS in any non-local environment.
   Acceptance test: the staging deploy rejects HTTP connections with a redirect
   or refusal, verified by an automated probe.
-- **NFR-SECURITY-002**: API keys are hashed at rest (Argon2id)
+- **NFR-SECURITY-002**: API keys are hashed at rest using sha256(pepper || token)
   and compared in constant time.
   Acceptance test: inspecting the `api_keys` table shows only hash values;
   a timing-attack unit test on the comparison function passes.
