@@ -547,9 +547,10 @@ transitions and their expected audit row shape.
 - **Action.** Read every `audit_events` row for this `workflow_run_id` ordered by
   `occurred_at`, `seq_in_run`.
 - **Assertion.** For each event after the first, `event_hash` equals
-  `sha256(prev_event_hash || canonical_payload_bytes)`. The first event has a
-  sentinel `prev_event_hash` (32 zero bytes) and a `event_hash` equal to
-  `sha256(sentinel || canonical_payload_bytes)`. The last event's
+  `sha256(prev_event_hash || canonical_payload_bytes)`. The first event has
+  `prev_event_hash` = NULL and an `event_hash` equal to
+  `sha256(canonical_payload_bytes)` (with empty bytes substituted for the absent
+  prev_event_hash in the hash input). The last event's
   `event_hash` is stored as the run's terminal chain-head in
   `workflow_runs.last_audit_hash` (if the schema exports that) or is
   recomputable from the stream.
