@@ -2485,15 +2485,16 @@ the wrapper's no-op mode is explicit and tested.
 
 Prometheus text on `/metrics` with the following initial set:
 
-- `http_requests_total{method,path,status}`: counter.
-- `http_request_duration_seconds{method,path,status}`: histogram with standard buckets.
-- `workflow_runs_total{workflow_name,terminal_state}`: counter.
-- `workflow_run_duration_seconds{workflow_name,terminal_state}`: histogram.
-- `step_attempts_total{workflow_name,step_name,state}`: counter.
+- `api_requests_total{route,method,status}`: counter.
+- `api_request_duration_seconds{route,method}`: histogram with standard buckets.
+- `workflow_runs_started_total{workflow_name,workflow_version}`: counter.
+- `workflow_runs_completed_total{workflow_name,workflow_version,terminal_state}`: counter.
+- `workflow_run_duration_seconds{workflow_name,workflow_version,terminal_state}`: histogram.
+- `step_attempts_total{workflow_name,step_name,outcome}`: counter.
 - `step_attempt_duration_seconds{workflow_name,step_name}`: histogram.
-- `queue_depth{queue_name}`: gauge (ready, inflight sum, delayed, dlq).
-- `escalation_cases_total{workflow_name,terminal_state}`: counter.
-- `escalation_case_age_seconds{workflow_name,state}`: histogram, bucketed to capture SLA classes.
+- `queue_depth{queue}`: gauge (ready, inflight, delayed, dlq).
+- `escalations_opened_total{workflow_name,step_name}`: counter.
+- `escalation_open_age_seconds{workflow_name}`: histogram, bucketed to capture SLA classes.
 - `audit_chain_mismatches_total`: counter, should be always zero in healthy operation.
 
 ### 18.4 Probes

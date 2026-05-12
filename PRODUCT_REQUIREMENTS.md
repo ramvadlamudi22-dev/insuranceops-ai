@@ -342,7 +342,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 
 - **NFR-PERF-001**: `POST /v1/documents` has p95 latency under 300 ms
   at 50 requests per second sustained on a single API pod.
-  Acceptance test: the `http_request_duration_seconds{route="POST /v1/documents"}`
+  Acceptance test: the `api_request_duration_seconds{route="POST /v1/documents"}`
   histogram reports p95 under 300 ms for the last 10 minutes under load.
 - **NFR-PERF-002**: `GET /v1/workflow-runs/{id}` has p95 latency under 150 ms
   at 100 requests per second sustained.

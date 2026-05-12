@@ -200,12 +200,11 @@ Each criterion names the artifact (test, metric, runbook) that confirms it.
 - Operator-visible metrics are emitted as Prometheus text at `GET /metrics`.
   At minimum:
   `workflow_runs_started_total`,
-  `workflow_runs_completed_total`,
-  `workflow_runs_failed_total`,
-  `step_attempts_total{step,outcome}`,
+  `workflow_runs_completed_total{terminal_state}`,
+  `step_attempts_total{workflow_name,step_name,outcome}`,
   `queue_depth{queue}`,
-  `escalations_open`,
-  and histogram `http_request_duration_seconds{route}`.
+  `escalations_opened_total`,
+  and histogram `api_request_duration_seconds{route,method}`.
   Confirmed by `test_metrics_endpoint_exposes_required_series`.
 
 ## Non-goals
