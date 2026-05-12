@@ -89,6 +89,200 @@ The contribution rules the project commits to (feature branches, small reviewabl
 
 The cross-document consistency contract is enforced by review. A PR that changes a canonical name, a lifecycle state, or a domain-entity field updates every document that references it in the same PR, or the PR is rejected. This is described in more detail in the Review discipline section of [TECHNICAL_DEBT_PREVENTION.md](./TECHNICAL_DEBT_PREVENTION.md).
 
+## Operational Verification
+
+This section describes how to boot the platform, exercise the full Phase 1 workflow, and verify correctness locally. All examples assume you are in the repository root.
+
+### Boot the compose stack
+
+```bash
+docker compose -f compose/compose.yml up -d
+```
+
+Wait for services to become healthy:
+
+```bash
+docker compose -f compose/compose.yml ps
+```
+
+The API is available at `http://localhost:8000`. Verify with:
+
+```bash
+curl http://localhost:8000/healthz
+# {"status":"ok"}
+```
+
+### Create an API key
+
+Run the seed script inside the running stack:
+
+```bash
+docker compose -f compose/compose.yml exec api python scripts/seed_dev_data.py
+```
+
+The script prints a Bearer token. Export it for use in subsequent commands:
+
+```bash
+export TOKEN="<token-from-seed-output>"
+```
+
+Alternatively, insert a key directly via psql:
+
+```bash
+RAW_TOKEN="my-dev-token"
+KEY_HASH=$(echo -n "dev-pepper-not-for-production${RAW_TOKEN}" | sha256sum | awk '{print $1}')
+docker compose -f compose/compose.yml exec -T postgres psql -U postgres -d insuranceops -c \
+  "INSERT INTO api_keys (api_key_id, key_hash, role, label, created_at)
+   VALUES (gen_random_uuid(), decode('${KEY_HASH}', 'hex'), 'supervisor', 'manual-key', NOW());"
+export TOKEN="${RAW_TOKEN}"
+```
+
+### Ingest a document
+
+Upload a plain-text claim document:
+
+```bash
+curl -X POST http://localhost:8000/v1/documents \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -F "file=@-;filename=claim.txt;type=text/plain" <<'EOF'
+Claim Number: CLM-2025-001234
+Policy Number: POL-12345678
+Claimant: Jane Smith
+Date of Loss: 01/15/2025
+Claim Type: auto
+Description: Vehicle collision at intersection of Main St and 5th Ave.
+EOF
+```
+
+Response includes `document_id`:
+
+```json
+{
+  "document_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "content_hash": "...",
+  "size_bytes": 187,
+  "content_type": "text/plain",
+  "ingested_at": "2025-01-15T12:00:00Z",
+  "is_duplicate": false
+}
+```
+
+### Create a workflow run
+
+```bash
+curl -X POST http://localhost:8000/v1/workflow-runs \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workflow_name": "claim_intake",
+    "document_ids": ["<document_id>"],
+    "inputs": {}
+  }'
+```
+
+### Poll workflow status
+
+```bash
+curl http://localhost:8000/v1/workflow-runs/<workflow_run_id> \
+  -H "Authorization: Bearer ${TOKEN}"
+```
+
+Terminal states: `completed`, `failed`, `cancelled`, `awaiting_human`.
+
+Poll in a loop:
+
+```bash
+while true; do
+  STATE=$(curl -s http://localhost:8000/v1/workflow-runs/<workflow_run_id> \
+    -H "Authorization: Bearer ${TOKEN}" | jq -r '.state')
+  echo "State: $STATE"
+  case "$STATE" in completed|failed|cancelled|awaiting_human) break ;; esac
+  sleep 2
+done
+```
+
+### Query audit events
+
+```bash
+curl http://localhost:8000/v1/workflow-runs/<workflow_run_id>/events \
+  -H "Authorization: Bearer ${TOKEN}" | jq '.events[] | {seq_in_run, event_type, actor}'
+```
+
+### Verify audit chain integrity
+
+Audit events carry a monotonically increasing `seq_in_run` starting at 1. Verify continuity:
+
+```bash
+curl -s http://localhost:8000/v1/workflow-runs/<workflow_run_id>/events \
+  -H "Authorization: Bearer ${TOKEN}" \
+  | jq -e '[.events[].seq_in_run] | sort | . as $s |
+    if length == 0 then false
+    elif .[0] != 1 then false
+    elif length == 1 then true
+    else [range(1; length)] | all(. as $i | $s[$i] == $s[$i-1] + 1) end'
+```
+
+A truthy result confirms no gaps in the sequence.
+
+### Observe retry/escalation behavior
+
+Ingest a document with an invalid policy number format to trigger a validation failure and escalation:
+
+```bash
+curl -X POST http://localhost:8000/v1/documents \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -F "file=@-;filename=bad_claim.txt;type=text/plain" <<'EOF'
+Claim Number: CLM-2025-BAD999
+Policy Number: INVALID-FORMAT
+Claimant: Test User
+Date of Loss: 01/20/2025
+Claim Type: property
+Description: Invalid policy number to trigger validation failure.
+EOF
+```
+
+Create a workflow run for this document and poll. The run should transition to `awaiting_human` after the validate step exhausts retries.
+
+List and claim the resulting escalation:
+
+```bash
+# List open escalations
+curl http://localhost:8000/v1/escalations?state=open \
+  -H "Authorization: Bearer ${TOKEN}"
+
+# Claim an escalation
+curl -X POST http://localhost:8000/v1/escalations/<escalation_id>/claim \
+  -H "Authorization: Bearer ${TOKEN}"
+
+# Resolve the escalation
+curl -X POST http://localhost:8000/v1/escalations/<escalation_id>/resolve \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"approve": false, "override": true, "notes": "Manual override after review"}'
+```
+
+### Run CI checks locally
+
+```bash
+# Lint
+ruff check src/ tests/
+
+# Format check
+ruff format --check src/ tests/
+
+# Type check
+mypy src/ --ignore-missing-imports
+
+# Tests (requires running Postgres and Redis)
+pytest tests/ -v --tb=short
+```
+
+Or run the full verification script (requires compose stack to be up):
+
+```bash
+./scripts/verify_phase1.sh
+```
+
 ## Next steps
 
 Phase 0 closes with a pull request from `phase-0-architecture` into `main`. The sequence is:
