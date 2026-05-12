@@ -2212,7 +2212,7 @@ Writes happen inside the same transaction as the state change they describe.
 |---------------------|-------------|------------------------------------------------------------------------------|
 | audit_event_id      | uuid (v7)   | Time-sortable primary key.                                                   |
 | workflow_run_id     | uuid        | The run this event belongs to.                                               |
-| actor               | text        | Canonical actor string: `worker:extractor`, `user:analyst:42`, `system:reaper`.|
+| actor               | text        | Canonical actor string: `worker:extractor`, `user:analyst:42`, `worker:reaper`.|
 | event_type          | text        | Snake_case event name, stable, versioned per payload schema.                 |
 | event_payload       | jsonb       | Structured payload, schema per event_type, validated on write.               |
 | occurred_at         | timestamptz | UTC wall-clock at event emission, from Postgres `now()`.                     |

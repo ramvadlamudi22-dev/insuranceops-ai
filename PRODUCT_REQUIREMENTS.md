@@ -315,7 +315,7 @@ Requirements are grouped by concern. Each has an ID and an acceptance test.
 - **FR-AUTH-003**: Every authenticated action records the Actor derived from the API key
   into AuditEvents.
   Acceptance test: AuditEvents for actions performed by an `operator` key
-  carry an Actor of the form `user:operator:<key_id>`.
+  carry an Actor of the form `api_key:operator:<api_key_id>`.
 - **FR-AUTH-004**: Health and readiness endpoints do not require authentication.
   Acceptance test: `GET /healthz` and `GET /readyz` without an API key
   return their respective non-401 responses.

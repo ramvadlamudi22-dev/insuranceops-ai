@@ -128,8 +128,8 @@ context at request start), the following fields are also present:
   Distinct from `correlation_id` because `correlation_id` may be supplied by the
   caller and is shared across the API and the worker for the same logical operation,
   while `request_id` is per-HTTP-request.
-- `actor`: the resolved principal. Format is `service:<name>` for a machine client
-  (e.g. `service:admin_console`) or `user:<role>:<user_id>` for a human session.
+- `actor`: the resolved principal. Format is `api_key:<role>:<api_key_id>` for a machine client
+  authenticated via API key (e.g. `api_key:operator:a1b2c3d4`) or `user:<role>:<user_id>` for a human session.
   When no credential is attached (for `/healthz`, `/readyz`, `/metrics`, and 401
   responses), `actor` is `anonymous`.
 - `route`: the FastAPI route template, not the raw path. `GET /v1/workflow-runs/{id}`
@@ -179,7 +179,7 @@ added here for readability; the actual output is a single JSON line.
   "service": "insuranceops-ai-worker",
   "service_version": "1.3.0",
   "env": "staging",
-  "actor": "service:worker_extractor",
+  "actor": "worker:extractor",
   "route": null,
   "method": null,
   "status": null,

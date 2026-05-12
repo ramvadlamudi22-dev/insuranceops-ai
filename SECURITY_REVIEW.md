@@ -422,7 +422,7 @@ with `actor`, the run id, and the timestamp. Exports are themselves audited.
 
 Every authenticated API call emits a structured log line at INFO level with:
 
-- `actor` (e.g., `api_key:ops_service_a`, `user:operator:42`).
+- `actor` (e.g., `api_key:operator:a1b2c3d4`, `user:operator:42`).
 - `route` (the matched FastAPI route path, not the raw URL, to avoid cardinality on path params).
 - `method`, `status`, `duration_ms`.
 - `correlation_id`.
