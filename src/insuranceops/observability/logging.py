@@ -79,7 +79,7 @@ def configure_logging(log_level: str = "INFO") -> None:
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
-    )
+    )  # type: ignore[arg-type]
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:

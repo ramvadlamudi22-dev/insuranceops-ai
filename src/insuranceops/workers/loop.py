@@ -72,7 +72,7 @@ async def worker_loop(
             "queue:tasks:ready",
             f"{QUEUE_INFLIGHT_PREFIX}{worker_id}",
             timeout=2,
-        )
+        )  # type: ignore[misc]
 
         if result is None:
             continue

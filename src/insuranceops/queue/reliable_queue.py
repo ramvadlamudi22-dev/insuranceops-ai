@@ -50,7 +50,7 @@ async def claim(client: redis.Redis, worker_id: str, timeout: int = 5) -> dict[s
     Returns:
         Parsed task payload dict, or None if timeout elapsed.
     """
-    result = await client.brpoplpush(QUEUE_READY, _inflight_key(worker_id), timeout=timeout)
+    result = await client.brpoplpush(QUEUE_READY, _inflight_key(worker_id), timeout=timeout)  # type: ignore[misc]
     if result is None:
         return None
     return json.loads(result)
@@ -67,7 +67,7 @@ async def ack(client: redis.Redis, worker_id: str, payload_bytes: bytes) -> int:
     Returns:
         Number of elements removed (should be 1).
     """
-    removed: int = await client.lrem(_inflight_key(worker_id), 1, payload_bytes)
+    removed: int = await client.lrem(_inflight_key(worker_id), 1, payload_bytes)  # type: ignore[arg-type]
     return removed
 
 
@@ -95,5 +95,5 @@ async def move_to_ready(client: redis.Redis, worker_id: str, payload_bytes: byte
         worker_id: Worker that held the task.
         payload_bytes: The raw bytes of the task.
     """
-    await client.lrem(_inflight_key(worker_id), 1, payload_bytes)
+    await client.lrem(_inflight_key(worker_id), 1, payload_bytes)  # type: ignore[arg-type]
     await client.lpush(QUEUE_READY, payload_bytes)
