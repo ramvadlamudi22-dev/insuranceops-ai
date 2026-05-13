@@ -27,17 +27,11 @@ from pathlib import Path
 
 # Matches op.create_index without postgresql_concurrently=True
 # BUT only when the index is NOT inside a create_table block
-_CREATE_INDEX_RE = re.compile(
-    r"op\.create_index\s*\(", re.MULTILINE
-)
-_CONCURRENTLY_RE = re.compile(
-    r"postgresql_concurrently\s*=\s*True"
-)
+_CREATE_INDEX_RE = re.compile(r"op\.create_index\s*\(", re.MULTILINE)
+_CONCURRENTLY_RE = re.compile(r"postgresql_concurrently\s*=\s*True")
 
 # Matches add_column with nullable=False and no server_default
-_ADD_COLUMN_RE = re.compile(
-    r"op\.add_column\s*\(", re.MULTILINE
-)
+_ADD_COLUMN_RE = re.compile(r"op\.add_column\s*\(", re.MULTILINE)
 _NULLABLE_FALSE_RE = re.compile(r"nullable\s*=\s*False")
 _SERVER_DEFAULT_RE = re.compile(r"server_default\s*=")
 
@@ -54,9 +48,7 @@ _DATA_MANIP_RE = re.compile(
 _OP_EXECUTE_RE = re.compile(r"op\.execute\s*\(", re.MULTILINE)
 
 # Initial migration marker (these get special treatment)
-_INITIAL_MIGRATION_RE = re.compile(
-    r'down_revision\s*[=:]\s*(?:Union\[str,\s*None\]\s*=\s*)?None\b'
-)
+_INITIAL_MIGRATION_RE = re.compile(r"down_revision\s*[=:]\s*(?:Union\[str,\s*None\]\s*=\s*)?None\b")
 
 
 @dataclass
@@ -149,15 +141,17 @@ def _check_create_index_without_concurrently(
         stmt_text = upgrade_body[stmt_start:stmt_end]
         if not _CONCURRENTLY_RE.search(stmt_text):
             line = _get_line_number(content, abs_pos)
-            findings.append(Finding(
-                file=filepath,
-                line=line,
-                pattern="CREATE_INDEX_WITHOUT_CONCURRENTLY",
-                message=(
-                    "op.create_index() on an existing table without "
-                    "postgresql_concurrently=True may hold a long lock"
-                ),
-            ))
+            findings.append(
+                Finding(
+                    file=filepath,
+                    line=line,
+                    pattern="CREATE_INDEX_WITHOUT_CONCURRENTLY",
+                    message=(
+                        "op.create_index() on an existing table without "
+                        "postgresql_concurrently=True may hold a long lock"
+                    ),
+                )
+            )
 
     return findings
 
@@ -192,15 +186,17 @@ def _check_add_column_not_null(
 
         if _NULLABLE_FALSE_RE.search(stmt_text) and not _SERVER_DEFAULT_RE.search(stmt_text):
             line = _get_line_number(content, abs_pos)
-            findings.append(Finding(
-                file=filepath,
-                line=line,
-                pattern="ADD_COLUMN_NOT_NULL_NO_DEFAULT",
-                message=(
-                    "op.add_column() with nullable=False and no server_default "
-                    "will lock the table for a full rewrite on large tables"
-                ),
-            ))
+            findings.append(
+                Finding(
+                    file=filepath,
+                    line=line,
+                    pattern="ADD_COLUMN_NOT_NULL_NO_DEFAULT",
+                    message=(
+                        "op.add_column() with nullable=False and no server_default "
+                        "will lock the table for a full rewrite on large tables"
+                    ),
+                )
+            )
 
     return findings
 
@@ -219,29 +215,33 @@ def _check_drop_operations(
     for match in _DROP_COLUMN_RE.finditer(upgrade_body):
         abs_pos = offset + match.start()
         line = _get_line_number(content, abs_pos)
-        findings.append(Finding(
-            file=filepath,
-            line=line,
-            pattern="DROP_COLUMN",
-            message=(
-                "op.drop_column() should follow expand-migrate-contract. "
-                "Ensure this is the 'contract' phase with prior expand and migrate steps."
-            ),
-        ))
+        findings.append(
+            Finding(
+                file=filepath,
+                line=line,
+                pattern="DROP_COLUMN",
+                message=(
+                    "op.drop_column() should follow expand-migrate-contract. "
+                    "Ensure this is the 'contract' phase with prior expand and migrate steps."
+                ),
+            )
+        )
 
     for match in _DROP_TABLE_RE.finditer(upgrade_body):
         # Skip if this is in a downgrade function
         abs_pos = offset + match.start()
         line = _get_line_number(content, abs_pos)
-        findings.append(Finding(
-            file=filepath,
-            line=line,
-            pattern="DROP_TABLE",
-            message=(
-                "op.drop_table() is destructive. Ensure this follows "
-                "expand-migrate-contract discipline."
-            ),
-        ))
+        findings.append(
+            Finding(
+                file=filepath,
+                line=line,
+                pattern="DROP_TABLE",
+                message=(
+                    "op.drop_table() is destructive. Ensure this follows "
+                    "expand-migrate-contract discipline."
+                ),
+            )
+        )
 
     return findings
 
@@ -277,15 +277,17 @@ def _check_data_manipulation(
         if _DATA_MANIP_RE.search(stmt_text):
             abs_pos = offset + match.start()
             line = _get_line_number(content, abs_pos)
-            findings.append(Finding(
-                file=filepath,
-                line=line,
-                pattern="DML_IN_MIGRATION",
-                message=(
-                    "Data manipulation (INSERT/UPDATE/DELETE) in a DDL migration. "
-                    "Consider separating data migrations into their own idempotent script."
-                ),
-            ))
+            findings.append(
+                Finding(
+                    file=filepath,
+                    line=line,
+                    pattern="DML_IN_MIGRATION",
+                    message=(
+                        "Data manipulation (INSERT/UPDATE/DELETE) in a DDL migration. "
+                        "Consider separating data migrations into their own idempotent script."
+                    ),
+                )
+            )
 
     return findings
 
@@ -313,7 +315,9 @@ def check_migration_file(filepath: Path) -> CheckResult:
 
     # Run all checks
     result.findings.extend(
-        _check_create_index_without_concurrently(content, upgrade_body, str(filepath), result.is_initial)
+        _check_create_index_without_concurrently(
+            content, upgrade_body, str(filepath), result.is_initial
+        )
     )
     result.findings.extend(
         _check_add_column_not_null(content, upgrade_body, str(filepath), result.is_initial)
@@ -377,9 +381,7 @@ def main() -> int:
     Returns:
         0 in advisory mode (always), 1 in strict mode if findings exist.
     """
-    parser = argparse.ArgumentParser(
-        description="Check Alembic migrations for unsafe patterns"
-    )
+    parser = argparse.ArgumentParser(description="Check Alembic migrations for unsafe patterns")
     parser.add_argument(
         "migrations_dir",
         nargs="?",

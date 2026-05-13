@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+# Import the module under test
+import sys
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
-
-# Import the module under test
-import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from check_migrations import (  # noqa: E402
@@ -213,7 +212,9 @@ class TestAddColumnNotNull:
         '''
         result = check_migration_file(tmp_migration(content))
         # drop_column will trigger but add_column should not
-        drop_findings = [f for f in result.findings if f.pattern == "ADD_COLUMN_NOT_NULL_NO_DEFAULT"]
+        drop_findings = [
+            f for f in result.findings if f.pattern == "ADD_COLUMN_NOT_NULL_NO_DEFAULT"
+        ]
         assert drop_findings == []
 
 
@@ -351,16 +352,11 @@ class TestExistingMigration:
     def test_existing_initial_migration_passes(self):
         """The existing 0001_initial.py should produce zero findings."""
         migration_path = (
-            Path(__file__).resolve().parents[2]
-            / "migrations"
-            / "versions"
-            / "0001_initial.py"
+            Path(__file__).resolve().parents[2] / "migrations" / "versions" / "0001_initial.py"
         )
         if not migration_path.exists():
             pytest.skip("Migration file not found (running outside repo)")
 
         result = check_migration_file(migration_path)
         assert result.is_initial is True
-        assert result.findings == [], (
-            f"False positive on existing migration: {result.findings}"
-        )
+        assert result.findings == [], f"False positive on existing migration: {result.findings}"
