@@ -57,6 +57,16 @@ jobs:
           API_KEY_HASH_PEPPER: "test-pepper"
           ENV: "test"
 
+  migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run migration safety lint (advisory)
+        run: python scripts/check_migrations.py migrations/versions/
+
   build:
     runs-on: ubuntu-latest
     steps:
