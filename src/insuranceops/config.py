@@ -17,4 +17,8 @@ class Settings(BaseSettings):
     ASSUME_TLS_TERMINATOR: bool = False
     PAYLOAD_STORAGE_PATH: str = "/data/payloads"
 
+    # Scheduled audit verifier
+    AUDIT_VERIFY_INTERVAL_S: int = 3600
+    AUDIT_VERIFY_SAMPLE_SIZE: int = 10
+
     model_config = SettingsConfigDict(env_prefix="", case_sensitive=True)

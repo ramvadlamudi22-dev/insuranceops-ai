@@ -6,6 +6,10 @@ Subcommands:
         Load audit events for the given workflow run and verify the hash chain.
         Exits 0 on success, 1 on failure.
 
+    audit verify-batch [--sample-size N] [--state STATE]
+        Verify audit chains for a batch of terminal workflow runs.
+        Exits 0 if all pass, 1 if any mismatch is found.
+
     queue dlq count
         Print the number of entries in the dead letter queue.
 
@@ -58,6 +62,51 @@ async def cmd_audit_verify(workflow_run_id: uuid.UUID) -> int:
             print(f"FAIL: {result.detail}")
             print(f"  First mismatch at index: {result.first_mismatch_index}")
             return 1
+    finally:
+        await engine.dispose()
+
+
+async def cmd_audit_verify_batch(sample_size: int | None, state: str | None) -> int:
+    """Verify audit chains for a batch of terminal workflow runs.
+
+    Returns:
+        0 if all chains are valid, 1 if any mismatch is found.
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from insuranceops.config import Settings
+    from insuranceops.workers.audit_verifier import verify_batch
+
+    settings = Settings()
+    engine = create_async_engine(settings.DATABASE_URL)
+    session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    try:
+        results = await verify_batch(
+            session_factory=session_factory,
+            sample_size=sample_size,
+            state_filter=state,
+        )
+
+        if not results:
+            print("No workflow runs found matching criteria.")
+            return 0
+
+        passed = 0
+        failed = 0
+        for run_id, vr in results:
+            if vr.is_valid:
+                passed += 1
+            else:
+                failed += 1
+                print(f"FAIL: workflow_run_id={run_id}")
+                print(f"      {vr.detail}")
+                print(f"      First mismatch at index: {vr.first_mismatch_index}")
+
+        print(f"\nSummary: {passed} passed, {failed} failed, {len(results)} total")
+
+        return 1 if failed > 0 else 0
     finally:
         await engine.dispose()
 
@@ -227,12 +276,32 @@ def main() -> None:
     audit_subparsers = audit_parser.add_subparsers(dest="audit_command", help="Audit subcommands")
 
     # audit verify
-    verify_parser = audit_subparsers.add_parser("verify", help="Verify audit chain integrity")
+    verify_parser = audit_subparsers.add_parser(
+        "verify", help="Verify audit chain integrity for a single run"
+    )
     verify_parser.add_argument(
         "--workflow-run-id",
         type=uuid.UUID,
         required=True,
         help="UUID of the workflow run to verify",
+    )
+
+    # audit verify-batch
+    verify_batch_parser = audit_subparsers.add_parser(
+        "verify-batch", help="Verify audit chains for a batch of terminal runs"
+    )
+    verify_batch_parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=None,
+        help="Max number of runs to verify (default: all, capped at 1000)",
+    )
+    verify_batch_parser.add_argument(
+        "--state",
+        type=str,
+        default=None,
+        choices=["completed", "failed", "cancelled"],
+        help="Filter by terminal state (default: all terminal states)",
     )
 
     # ── queue ─────────────────────────────────────────────────────────────────
@@ -272,9 +341,17 @@ def main() -> None:
     # ── dispatch ──────────────────────────────────────────────────────────────
     args = parser.parse_args()
 
-    if args.command == "audit" and getattr(args, "audit_command", None) == "verify":
-        exit_code = asyncio.run(cmd_audit_verify(args.workflow_run_id))
-        sys.exit(exit_code)
+    if args.command == "audit":
+        audit_cmd = getattr(args, "audit_command", None)
+        if audit_cmd == "verify":
+            exit_code = asyncio.run(cmd_audit_verify(args.workflow_run_id))
+            sys.exit(exit_code)
+        elif audit_cmd == "verify-batch":
+            exit_code = asyncio.run(cmd_audit_verify_batch(args.sample_size, args.state))
+            sys.exit(exit_code)
+        else:
+            audit_parser.print_help()
+            sys.exit(1)
     elif args.command == "queue" and getattr(args, "queue_command", None) == "dlq":
         dlq_cmd = getattr(args, "dlq_command", None)
         if dlq_cmd == "count":
