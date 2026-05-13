@@ -32,7 +32,7 @@ async def enqueue(client: redis.Redis, payload: dict[str, Any]) -> int:
         New length of the ready queue.
     """
     data = json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8")
-    length: int = await client.lpush(QUEUE_READY, data)
+    length: int = await client.lpush(QUEUE_READY, data)  # type: ignore[misc]
     return length
 
 
@@ -81,7 +81,7 @@ async def get_inflight(client: redis.Redis, worker_id: str) -> list[bytes]:
     Returns:
         List of raw task bytes currently inflight.
     """
-    items: list[bytes] = await client.lrange(_inflight_key(worker_id), 0, -1)
+    items: list[bytes] = await client.lrange(_inflight_key(worker_id), 0, -1)  # type: ignore[misc]
     return items
 
 
@@ -96,4 +96,4 @@ async def move_to_ready(client: redis.Redis, worker_id: str, payload_bytes: byte
         payload_bytes: The raw bytes of the task.
     """
     await client.lrem(_inflight_key(worker_id), 1, payload_bytes)  # type: ignore[arg-type]
-    await client.lpush(QUEUE_READY, payload_bytes)
+    await client.lpush(QUEUE_READY, payload_bytes)  # type: ignore[misc]

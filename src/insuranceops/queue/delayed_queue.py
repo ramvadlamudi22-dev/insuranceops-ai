@@ -38,7 +38,7 @@ async def schedule(client: redis.Redis, payload: dict[str, Any], run_at: datetim
     """
     data = json.dumps(payload, separators=(",", ":"), default=str).encode("utf-8")
     score = _epoch_ms(run_at)
-    added: int = await client.zadd(QUEUE_DELAYED, {data: score})
+    added: int = await client.zadd(QUEUE_DELAYED, {data: score})  # type: ignore[misc]
     return added
 
 
@@ -61,18 +61,18 @@ async def mature_tasks(client: redis.Redis, now: datetime, batch_size: int = 200
 
     while promoted < batch_size:
         # ZPOPMIN atomically removes the lowest-scored element
-        results = await client.zpopmin(QUEUE_DELAYED, count=1)
+        results = await client.zpopmin(QUEUE_DELAYED, count=1)  # type: ignore[misc]
         if not results:
             break
 
         item, score = results[0]
         if score > max_score:
             # Item is not yet mature; put it back and stop
-            await client.zadd(QUEUE_DELAYED, {item: score})
+            await client.zadd(QUEUE_DELAYED, {item: score})  # type: ignore[misc]
             break
 
         # Push to ready queue
-        await client.lpush(QUEUE_READY, item)
+        await client.lpush(QUEUE_READY, item)  # type: ignore[misc]
         promoted += 1
 
     return promoted

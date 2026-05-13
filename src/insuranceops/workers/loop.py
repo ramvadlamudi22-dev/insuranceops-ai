@@ -64,7 +64,7 @@ async def worker_loop(
                 f"{HEARTBEAT_PREFIX}{worker_id}",
                 str(int(now)),
                 ex=HEARTBEAT_TTL_S,
-            )
+            )  # type: ignore[misc]
             last_heartbeat = now
 
         # Claim task with short timeout so we can check shutdown

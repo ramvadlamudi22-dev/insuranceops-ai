@@ -72,7 +72,7 @@ async def _reap_stuck_tasks(
     now = time.time()
 
     for key in keys:
-        items: list[bytes] = await redis_client.lrange(key, 0, -1)
+        items: list[bytes] = await redis_client.lrange(key, 0, -1)  # type: ignore[misc]
         worker_id = key.decode("utf-8").removeprefix(QUEUE_INFLIGHT_PREFIX)
 
         for item in items:

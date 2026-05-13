@@ -24,7 +24,7 @@ async def move_to_dlq(client: redis.Redis, payload_bytes: bytes) -> int:
     Returns:
         New length of the DLQ.
     """
-    length: int = await client.lpush(QUEUE_DLQ, payload_bytes)
+    length: int = await client.lpush(QUEUE_DLQ, payload_bytes)  # type: ignore[misc]
     return length
 
 
@@ -39,7 +39,7 @@ async def list_dlq(client: redis.Redis, start: int = 0, count: int = 50) -> list
     Returns:
         List of raw task payload bytes from the DLQ.
     """
-    items: list[bytes] = await client.lrange(QUEUE_DLQ, start, start + count - 1)
+    items: list[bytes] = await client.lrange(QUEUE_DLQ, start, start + count - 1)  # type: ignore[misc]
     return items
 
 
@@ -55,6 +55,6 @@ async def requeue_from_dlq(client: redis.Redis, payload_bytes: bytes) -> bool:
     """
     removed: int = await client.lrem(QUEUE_DLQ, 1, payload_bytes)  # type: ignore[arg-type]
     if removed > 0:
-        await client.lpush(QUEUE_READY, payload_bytes)
+        await client.lpush(QUEUE_READY, payload_bytes)  # type: ignore[misc]
         return True
     return False
