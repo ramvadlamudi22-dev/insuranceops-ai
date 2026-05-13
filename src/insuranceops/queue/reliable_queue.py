@@ -67,7 +67,8 @@ async def ack(client: redis.Redis, worker_id: str, payload_bytes: bytes) -> int:
     Returns:
         Number of elements removed (should be 1).
     """
-    removed: int = await client.lrem(_inflight_key(worker_id), 1, payload_bytes)  # type: ignore[misc]
+    value_str = payload_bytes.decode("utf-8") if isinstance(payload_bytes, bytes) else payload_bytes
+    removed: int = await client.lrem(_inflight_key(worker_id), 1, value_str)  # type: ignore[misc]
     return removed
 
 
@@ -95,5 +96,6 @@ async def move_to_ready(client: redis.Redis, worker_id: str, payload_bytes: byte
         worker_id: Worker that held the task.
         payload_bytes: The raw bytes of the task.
     """
-    await client.lrem(_inflight_key(worker_id), 1, payload_bytes)  # type: ignore[misc]
+    value_str = payload_bytes.decode("utf-8") if isinstance(payload_bytes, bytes) else payload_bytes
+    await client.lrem(_inflight_key(worker_id), 1, value_str)  # type: ignore[misc]
     await client.lpush(QUEUE_READY, payload_bytes)  # type: ignore[misc]

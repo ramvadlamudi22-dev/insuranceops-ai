@@ -53,7 +53,8 @@ async def requeue_from_dlq(client: redis.Redis, payload_bytes: bytes) -> bool:
     Returns:
         True if the item was found in DLQ and requeued, False otherwise.
     """
-    removed: int = await client.lrem(QUEUE_DLQ, 1, payload_bytes)  # type: ignore[misc]
+    value_str = payload_bytes.decode("utf-8") if isinstance(payload_bytes, bytes) else payload_bytes
+    removed: int = await client.lrem(QUEUE_DLQ, 1, value_str)  # type: ignore[misc]
     if removed > 0:
         await client.lpush(QUEUE_READY, payload_bytes)  # type: ignore[misc]
         return True

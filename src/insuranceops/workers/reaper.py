@@ -80,7 +80,8 @@ async def _reap_stuck_tasks(
                 payload = json.loads(item)
             except (json.JSONDecodeError, ValueError):
                 # Malformed payload - move to DLQ
-                await redis_client.lrem(key, 1, item)  # type: ignore[misc]
+                item_str = item.decode("utf-8") if isinstance(item, bytes) else item
+                await redis_client.lrem(key, 1, item_str)  # type: ignore[misc]
                 await move_to_dlq(redis_client, item)
                 reclaimed += 1
                 continue
@@ -102,7 +103,8 @@ async def _reap_stuck_tasks(
 
                 if attempt_number >= max_attempts:
                     # Move to DLQ
-                    await redis_client.lrem(key, 1, item)  # type: ignore[misc]
+                    item_str = item.decode("utf-8") if isinstance(item, bytes) else item
+                    await redis_client.lrem(key, 1, item_str)  # type: ignore[misc]
                     await move_to_dlq(redis_client, item)
                     logger.info(
                         "reaper_moved_to_dlq",

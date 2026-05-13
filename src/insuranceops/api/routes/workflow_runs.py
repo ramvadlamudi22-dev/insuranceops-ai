@@ -77,6 +77,9 @@ async def create_workflow_run(
     )
     session.add(run_model)
 
+    # Flush to ensure WorkflowRun row exists before FK-dependent inserts
+    await session.flush()
+
     # Attach documents
     for doc_id in body.document_ids:
         session.add(
