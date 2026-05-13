@@ -109,6 +109,9 @@ async def create_workflow_run(
         session.add(step_model)
         step_models.append(step_model)
 
+    # Flush to ensure step IDs are assigned before creating StepAttempt
+    await session.flush()
+
     # Create first StepAttempt
     first_step = step_models[0]
     step_attempt_id = uuid.uuid4()

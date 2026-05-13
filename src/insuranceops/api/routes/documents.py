@@ -15,6 +15,7 @@ from insuranceops.api.schemas.documents import DocumentIngestResponse
 from insuranceops.security.auth import ApiKeyPrincipal
 from insuranceops.security.rbac import requires_role
 from insuranceops.storage.models import DocumentModel
+from insuranceops.storage.payloads.local import LocalPayloadStore
 from insuranceops.storage.repositories.documents import DocumentRepository
 
 router = APIRouter(prefix="/v1/documents", tags=["documents"])
@@ -40,8 +41,6 @@ async def ingest_document(
     now = datetime.now(UTC)
 
     # Store payload via the payload store
-    from insuranceops.storage.payloads.local import LocalPayloadStore
-
     settings = request.app.state.settings
     payload_store = LocalPayloadStore(settings.PAYLOAD_STORAGE_PATH)
     payload_ref = payload_store.write(content_hash, content)
@@ -87,8 +86,6 @@ async def get_document_content(
     doc = await repo.get_by_id(document_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
-
-    from insuranceops.storage.payloads.local import LocalPayloadStore
 
     settings = request.app.state.settings
     payload_store = LocalPayloadStore(settings.PAYLOAD_STORAGE_PATH)
