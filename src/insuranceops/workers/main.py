@@ -15,6 +15,7 @@ from insuranceops.config import Settings
 from insuranceops.observability.logging import configure_logging, get_logger
 from insuranceops.queue.redis_client import create_redis_pool
 from insuranceops.storage.db import create_engine, create_session_factory
+from insuranceops.workers.audit_verifier import audit_verifier_loop
 from insuranceops.workers.loop import worker_loop
 from insuranceops.workers.outbox_relay import outbox_relay_loop
 from insuranceops.workers.reaper import reaper_loop
@@ -45,6 +46,11 @@ def parse_args() -> argparse.Namespace:
         "--no-outbox",
         action="store_true",
         help="Disable the outbox relay task",
+    )
+    parser.add_argument(
+        "--no-audit-verifier",
+        action="store_true",
+        help="Disable the scheduled audit-chain verifier task",
     )
     return parser.parse_args()
 
@@ -123,6 +129,19 @@ async def run_worker(args: argparse.Namespace) -> None:
                     shutdown_event=shutdown_event,
                 ),
                 name="outbox_relay_loop",
+            )
+        )
+
+    if not args.no_audit_verifier:
+        tasks.append(
+            asyncio.create_task(
+                audit_verifier_loop(
+                    session_factory=session_factory,
+                    shutdown_event=shutdown_event,
+                    interval_s=settings.AUDIT_VERIFY_INTERVAL_S,
+                    sample_size=settings.AUDIT_VERIFY_SAMPLE_SIZE,
+                ),
+                name="audit_verifier_loop",
             )
         )
 
