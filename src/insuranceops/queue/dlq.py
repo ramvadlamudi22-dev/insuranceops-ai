@@ -59,3 +59,47 @@ async def requeue_from_dlq(client: redis.Redis, payload_bytes: bytes) -> bool:
         await client.lpush(QUEUE_READY, payload_bytes)  # type: ignore[misc]
         return True
     return False
+
+
+async def dlq_count(client: redis.Redis) -> int:
+    """Return the number of entries in the dead letter queue.
+
+    Args:
+        client: Async Redis client.
+
+    Returns:
+        Number of entries in the DLQ.
+    """
+    length: int = await client.llen(QUEUE_DLQ)  # type: ignore[misc]
+    return length
+
+
+async def get_dlq_entry(client: redis.Redis, index: int) -> bytes | None:
+    """Get a single DLQ entry by index.
+
+    Args:
+        client: Async Redis client.
+        index: 0-based index into the DLQ list.
+
+    Returns:
+        Raw task payload bytes at the given index, or None if index is out of range.
+    """
+    items: list[bytes] = await client.lrange(QUEUE_DLQ, index, index)  # type: ignore[misc]
+    if not items:
+        return None
+    return items[0]
+
+
+async def drop_from_dlq(client: redis.Redis, payload_bytes: bytes) -> bool:
+    """Remove a task from the DLQ without requeueing.
+
+    Args:
+        client: Async Redis client.
+        payload_bytes: The exact bytes of the DLQ entry to remove.
+
+    Returns:
+        True if the item was found and removed, False otherwise.
+    """
+    value_str = payload_bytes.decode("utf-8") if isinstance(payload_bytes, bytes) else payload_bytes
+    removed: int = await client.lrem(QUEUE_DLQ, 1, value_str)  # type: ignore[misc]
+    return removed > 0
