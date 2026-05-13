@@ -49,10 +49,9 @@ event_hash = sha256(
 )
 ```
 
-Note: Other documents use the shorthand `sha256(prev_event_hash || canonical_payload)`
-to describe the hash chain linkage. This shorthand means "prev_event_hash is an input
-to the hash computation" and does not specify concatenation order. The formula above
-(from SYSTEM_ARCHITECTURE.md section 16.2) is the canonical byte-ordering specification.
+Note: All documents now use the full canonical formula above.
+The byte-ordering specification is authoritative: `prev_event_hash` (or `b''` for the
+first event) is the LAST field in the hash input, not the first.
 
 A 32-byte-zero sentinel is NOT used. The field is nullable, not sentinel-valued.
 
