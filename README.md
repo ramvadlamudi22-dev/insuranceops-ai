@@ -4,9 +4,7 @@ An internal, production-grade AI-assisted workflow orchestration platform for in
 
 ## Status
 
-Phase 0 (architecture and design) is complete. The ten design documents listed below describe the platform end to end: product surface, system architecture, phased delivery, security posture, observability, testing, deployment, risk register, and technical-debt guardrails.
-
-Implementation has not started. No application code, Dockerfile, CI workflow, or database migration exists in this repository yet. Those are Phase 1 and later artifacts described in the documents. The Phase 0 deliverables land on the `phase-0-architecture` branch and will be merged into `main` through a pull request after review.
+Phase 0 (architecture and design) and Phase 1 (initial implementation) are complete. The repository contains the full Phase 0 design document set plus the working Phase 1 implementation: application code, test suite, Docker packaging, Compose topology, database migrations, CI pipeline, and operational verification tooling.
 
 The canonical vocabulary (`Document`, `Workflow`, `WorkflowRun`, `Step`, `StepAttempt`, `Task`, `EscalationCase`, `AuditEvent`, `Actor`) and the canonical lifecycle states are fixed in [SPEC.md](./SPEC.md) and used consistently across every document in the set. A cross-document disagreement is a bug in the document, not in the reader; SPEC.md is the tie-breaker.
 
@@ -41,12 +39,14 @@ Different readers have different entry points. The sequences below are suggestio
 
 A complete reader path from empty to full is: SPEC, PRODUCT_REQUIREMENTS, SYSTEM_ARCHITECTURE, PHASED_ROADMAP, SECURITY_REVIEW, OBSERVABILITY_STRATEGY, TESTING_STRATEGY, DEPLOYMENT_STRATEGY, RISK_ANALYSIS, TECHNICAL_DEBT_PREVENTION. That sequence respects the dependency of each document on the one before it: the product surface is defined before the architecture, the architecture is defined before the operational posture, and the operational posture is defined before the risks and the debt guardrails that watch it.
 
-## Repository layout at Phase 0
+## Repository layout
 
-At the end of Phase 0 the repository contains only the design documents and the minimum files required to make it a usable git repository. There is no `src/`, no `tests/`, no `docker/`, and no `.github/workflows/` yet. Those arrive in Phase 1.
+The repository contains the Phase 0 design documents plus the full Phase 1 implementation.
 
 ```
 .
+├── .env.example                # Environment variable template
+├── .github/workflows/ci.yml   # GitHub Actions CI pipeline
 ├── .gitignore
 ├── README.md
 ├── SPEC.md
@@ -59,35 +59,60 @@ At the end of Phase 0 the repository contains only the design documents and the 
 ├── DEPLOYMENT_STRATEGY.md
 ├── RISK_ANALYSIS.md
 ├── TECHNICAL_DEBT_PREVENTION.md
-└── TERMINOLOGY.md
+├── TERMINOLOGY.md
+├── pyproject.toml              # Package manifest and tool configuration
+├── compose/
+│   ├── compose.yml            # Production-like Compose topology
+│   └── compose.test.yml       # CI test Compose overlay
+├── docker/
+│   └── Dockerfile             # Multi-stage application image
+├── migrations/
+│   ├── alembic.ini
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions/
+│       └── 0001_initial.py    # Phase 1 schema migration
+├── scripts/
+│   ├── dev_up.sh              # Start local development stack
+│   ├── dev_down.sh            # Stop local development stack
+│   ├── opsctl                 # Operational control CLI
+│   ├── seed_dev_data.py       # Seed development API keys
+│   └── verify_phase1.sh       # End-to-end verification script
+├── src/insuranceops/
+│   ├── api/                   # FastAPI application, routes, schemas
+│   ├── audit/                 # Audit chain and hash-chain verifier
+│   ├── config.py              # Centralized configuration
+│   ├── domain/                # Domain models and value objects
+│   ├── observability/         # Logging, metrics, tracing
+│   ├── queue/                 # Redis reliable queue, DLQ, delayed queue
+│   ├── security/              # Auth, RBAC, redaction
+│   ├── storage/               # SQLAlchemy models, repositories, payloads
+│   ├── workers/               # Task worker, reaper, outbox relay
+│   └── workflows/             # Workflow definitions and registry
+└── tests/
+    ├── audit/                 # Audit chain unit tests
+    ├── integration/           # Integration tests (DB, Redis)
+    ├── unit/                  # Pure unit tests
+    └── workflow/              # Workflow lifecycle tests
 ```
 
-The proposed Phase 1 repository tree (packages, modules, and folders the code will be organized into) lives in [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) section 4. That tree is a specification for Phase 1 scaffolding, not a current state of this branch.
+## Phase history
 
-The absence of implementation artifacts at Phase 0 is deliberate. The Phase 0 deliverable is a design that a second engineer could implement without asking questions the documents do not already answer; anything that would prejudge the Phase 1 scaffolding beyond the documented architecture is out of scope for this branch.
+### Phase 0 (architecture)
 
-### What is not in the repository at Phase 0
+Phase 0 produced the ten design documents that define the platform end to end. The design was assembled as individually reviewable commits on the `phase-0-architecture` branch, then merged into `main`. The Phase 0 deliverables established the canonical vocabulary, lifecycle state machines, domain models, storage contracts, queue contracts, security posture, observability surface, testing shape, deployment topology, risk register, and technical-debt guardrails.
 
-Readers arriving from a typical project template may expect files that are intentionally absent here. The following are Phase 1 or later artifacts and are not part of the Phase 0 diff:
+### Phase 1 (initial implementation)
 
-- No `pyproject.toml`, `requirements.txt`, or lockfile. The dependency pinning discipline is described in [DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md) and [TECHNICAL_DEBT_PREVENTION.md](./TECHNICAL_DEBT_PREVENTION.md), but no package manifest is committed yet.
-- No `Dockerfile` or `docker-compose.yml`. The deployment unit and Compose topology are specified in [DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md); the Phase 1 implementation commit authors them against that specification.
-- No `alembic.ini` or `alembic/` tree. The migration discipline and the expand-migrate-contract rule live in [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) and [TECHNICAL_DEBT_PREVENTION.md](./TECHNICAL_DEBT_PREVENTION.md); the first migration arrives with the Phase 1 schema.
-- No `.github/workflows/`. The CI pipeline shape (ruff, mypy, pytest with service containers, docker build without push) is specified in [DEPLOYMENT_STRATEGY.md](./DEPLOYMENT_STRATEGY.md) and is wired as part of the Phase 1 scaffolding feature.
+Phase 1 implemented the architecture specified in the Phase 0 documents. The deliverables include:
 
-## How Phase 0 was produced
-
-The repository is a fresh git history with the following shape:
-
-- `main` carries a single seed commit that creates the repository: a minimum README placeholder and a forward-looking `.gitignore`. This is a one-time direct-to-`main` action to establish a merge base for subsequent pull requests; no further direct-to-`main` commits are permitted.
-- The `phase-0-architecture` branch is cut from the seed commit. Every Phase 0 design document lands on this branch as its own commit with a Conventional Commits message in the `docs:` type. The final commit on this branch rewrites this README into the index you are reading.
-- Commits are small and reviewable. There is no squash of the planned per-document commits; the commit history of the branch is the audit trail of how the design was assembled.
-- No emoji, no em dashes, no placeholder markers of any kind appear in any document. Every deferred decision is named with the phase it belongs to and the reason it is deferred.
-- Every document carries a `## Purpose` section and a `## Assumptions` section. Documents whose domain admits meaningful rejected alternatives also carry a `## Rejected alternatives` or `## Tradeoffs` section. These are structural properties of the set, not stylistic conventions, and are verified before the Phase 0 branch is opened for review.
-
-The contribution rules the project commits to (feature branches, small reviewable commits, no direct-to-`main` after the seed, deterministic CI, clean commit history) are documented in the engineering-workflow section of [PHASED_ROADMAP.md](./PHASED_ROADMAP.md).
-
-The cross-document consistency contract is enforced by review. A PR that changes a canonical name, a lifecycle state, or a domain-entity field updates every document that references it in the same PR, or the PR is rejected. This is described in more detail in the Review discipline section of [TECHNICAL_DEBT_PREVENTION.md](./TECHNICAL_DEBT_PREVENTION.md).
+- Application package (`src/insuranceops/`) with API, domain, storage, queue, worker, audit, security, observability, and workflow modules.
+- Test suite (`tests/`) covering unit, integration, audit, and workflow lifecycle scenarios.
+- Docker packaging (`docker/Dockerfile`) as a multi-stage build.
+- Compose topology (`compose/`) for local development and CI.
+- Database migration (`migrations/versions/0001_initial.py`) for the Phase 1 schema.
+- GitHub Actions CI pipeline (`.github/workflows/ci.yml`) running lint, type-check, and tests with service containers.
+- Operational scripts (`scripts/`) for development workflow and end-to-end verification.
 
 ## Operational Verification
 
@@ -285,13 +310,4 @@ Or run the full verification script (requires compose stack to be up):
 
 ## Next steps
 
-Phase 0 closes with a pull request from `phase-0-architecture` into `main`. The sequence is:
-
-1. Open the pull request from `phase-0-architecture` to `main`. The PR description links each of the ten design documents and summarizes the decisions locked by Phase 0.
-2. Review. Every reviewer confirms that the documents are internally consistent with the canonical vocabulary, that no forbidden implementation file has been introduced, and that every document carries a Purpose and an Assumptions section.
-3. Approval gate. Phase 1 implementation is blocked until the pull request is approved and merged. Opening Phase 1 work before the gate is a process failure, not a shortcut.
-4. Merge. The branch merges into `main` without a squash so the per-document commit history is preserved. The Phase 0 tag marks the merge commit.
-
-Phase 1 work then begins on its own feature branches as described in [PHASED_ROADMAP.md](./PHASED_ROADMAP.md). The first Phase 1 feature scaffolds the repository tree specified in SYSTEM_ARCHITECTURE.md section 4 and wires the CI pipeline specified in DEPLOYMENT_STRATEGY.md; subsequent features implement the lifecycles in the order the roadmap commits to.
-
-Until the approval gate clears, this repository's `main` branch contains only the seed commit. The design is complete; the platform is not yet built.
+Phase 1 is complete. Subsequent phases will deliver the capabilities described in [PHASED_ROADMAP.md](./PHASED_ROADMAP.md), including AI/ML handler integration, production hardening, and operational maturity improvements. Phase 2 work begins on its own feature branches as described in the roadmap.
