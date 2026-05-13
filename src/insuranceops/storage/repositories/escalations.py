@@ -41,7 +41,7 @@ class EscalationRepository:
             .values(state="claimed", claimed_by=actor)
         )
         result = await self._session.execute(stmt)
-        return result.rowcount == 1  # type: ignore[union-attr]
+        return result.rowcount == 1  # type: ignore[attr-defined]
 
     async def list_open(self, limit: int = 50, offset: int = 0) -> Sequence[EscalationCaseModel]:
         """List open escalation cases ordered by creation time."""

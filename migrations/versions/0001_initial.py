@@ -212,7 +212,7 @@ def upgrade() -> None:
             "retry_policy",
             JSONB,
             nullable=False,
-            server_default='\'{"base_delay_s":2,"cap_s":60,"jitter":"full"}\'',
+            server_default=sa.text(r"""'{"base_delay_s"\:2,"cap_s"\:60,"jitter"\:"full"}'"""),
         ),
         sa.Column(
             "created_at",

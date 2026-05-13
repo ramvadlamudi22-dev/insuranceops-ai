@@ -48,7 +48,7 @@ class WorkflowRunRepository:
             .values(state=new_state, version=new_version, **kwargs)
         )
         result = await self._session.execute(stmt)
-        return result.rowcount == 1  # type: ignore[union-attr]
+        return result.rowcount == 1  # type: ignore[attr-defined]
 
     async def list_by_state(
         self, state: str, limit: int = 50, offset: int = 0

@@ -117,7 +117,7 @@ async def claim_escalation(
     )
     result = await session.execute(stmt)
 
-    if result.rowcount == 0:  # type: ignore[union-attr]
+    if result.rowcount == 0:  # type: ignore[attr-defined]
         # Check if escalation exists at all
         check = await session.execute(
             select(EscalationCaseModel).where(EscalationCaseModel.escalation_id == escalation_id)

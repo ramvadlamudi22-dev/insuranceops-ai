@@ -47,7 +47,7 @@ class OutboxRepository:
             .values(enqueued_at=enqueued_at)
         )
         result = await self._session.execute(stmt)
-        return result.rowcount == 1  # type: ignore[union-attr]
+        return result.rowcount == 1  # type: ignore[attr-defined]
 
     async def increment_attempts(self, outbox_id: int, error: str) -> None:
         """Increment the attempt counter and record the error."""

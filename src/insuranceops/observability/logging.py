@@ -68,8 +68,8 @@ def configure_logging(log_level: str = "INFO") -> None:
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.processors.TimeStamper(fmt="iso", utc=True),
-            add_context_vars,
-            redact_sensitive_fields,
+            add_context_vars,  # type: ignore[list-item]
+            redact_sensitive_fields,  # type: ignore[list-item]
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
@@ -79,7 +79,7 @@ def configure_logging(log_level: str = "INFO") -> None:
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
-    )  # type: ignore[arg-type]
+    )
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
