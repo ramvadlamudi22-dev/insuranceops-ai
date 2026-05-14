@@ -1,4 +1,8 @@
-"""Validate step handler: runs the configured validator on extraction results."""
+"""Validate step handler: runs the configured validator on extraction results.
+
+Integrates AI review routing: after validation, evaluates field confidence
+scores against configured thresholds to determine if human review is needed.
+"""
 
 from __future__ import annotations
 
@@ -6,10 +10,14 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from insuranceops.ai.review import ReviewThresholds, evaluate_review_routing
+from insuranceops.observability.logging import get_logger
 from insuranceops.workflows.extractors.base import ExtractionField, ExtractionResult, Provenance
 from insuranceops.workflows.steps.base import StepContext, StepResult
 from insuranceops.workflows.validators.base import ReferenceData
 from insuranceops.workflows.validators.rules import RuleBasedValidator
+
+logger = get_logger("workflow.steps.validate")
 
 
 def _reconstruct_extraction_result(extract_output: dict[str, Any]) -> ExtractionResult:
@@ -47,13 +55,17 @@ class ValidateStepHandler:
 
     Loads ExtractionResult from the previous extract step output,
     runs the validator, and returns:
-    - succeeded on pass
+    - succeeded on pass (with review routing evaluation)
     - escalate on fail_correctable (with reason)
     - failed_terminal on fail_terminal
+
+    After validation passes, evaluates confidence-based review routing
+    to determine if the extraction warrants human review before proceeding.
     """
 
     def __init__(self) -> None:
         self._validator = RuleBasedValidator()
+        self._review_thresholds = ReviewThresholds()
 
     async def handle(self, context: StepContext, session: AsyncSession) -> StepResult:
         """Validate extracted data against business rules.
@@ -81,10 +93,49 @@ class ValidateStepHandler:
         outcome = self._validator.validate(extraction_result, ref)
 
         if outcome.status == "pass":
+            # Evaluate AI review routing based on field confidences
+            field_confidences = {name: f.confidence for name, f in extraction_result.fields.items()}
+            review_routing = evaluate_review_routing(
+                field_confidences=field_confidences,
+                thresholds=self._review_thresholds,
+            )
+
+            if review_routing.requires_review:
+                # Route to escalation for human review
+                logger.info(
+                    "validate_review_routing_triggered",
+                    reasons=[r.value for r in review_routing.reasons],
+                    overall_confidence=round(review_routing.overall_confidence, 3),
+                    suggested_action=review_routing.suggested_action,
+                )
+                return StepResult(
+                    status="escalate",
+                    output={
+                        "validation_status": "pass_with_review",
+                        "review_routing": {
+                            "requires_review": True,
+                            "reasons": [r.value for r in review_routing.reasons],
+                            "overall_confidence": review_routing.overall_confidence,
+                            "suggested_action": review_routing.suggested_action,
+                        },
+                        "validator_name": self._validator.name,
+                        "validator_version": self._validator.version,
+                    },
+                    error_code="REVIEW_REQUIRED",
+                    error_detail=(
+                        f"Extraction passed validation but requires human review: "
+                        f"{', '.join(r.value for r in review_routing.reasons)}"
+                    ),
+                )
+
             return StepResult(
                 status="succeeded",
                 output={
                     "validation_status": "pass",
+                    "review_routing": {
+                        "requires_review": False,
+                        "overall_confidence": review_routing.overall_confidence,
+                    },
                     "validator_name": self._validator.name,
                     "validator_version": self._validator.version,
                 },
