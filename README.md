@@ -58,7 +58,9 @@ See [docs/getting-started.md](./docs/getting-started.md) for the full walkthroug
 | [Getting Started](./docs/getting-started.md) | New developers — boot to first workflow in 10 minutes |
 | [Deployment Guide](./docs/deployment.md) | Operators — configuration, migrations, scaling, troubleshooting |
 | [Operations Guide](./docs/operations.md) | Day-to-day — DLQ management, audit verification, escalations |
-| [Architecture Diagrams](./docs/architecture/) | Visual — workflow lifecycle, queue topology, worker architecture, audit chain |
+| [Architecture Diagrams](./docs/architecture/) | Visual — workflow lifecycle, queue topology, worker architecture, audit chain, AI integration |
+| [Demo Walkthrough](./docs/demo-walkthrough.md) | Live demo — 7 scenarios with API examples and expected outputs |
+| [Demo Scenarios](./docs/demo-scenarios.md) | Pre-built scenarios with sample documents and outcomes |
 
 ## Design Documents
 
@@ -150,6 +152,66 @@ Every PR runs:
 | migration-check | check_migrations.py | Advisory lint for unsafe migration patterns |
 | build | docker build | Verify the Dockerfile still produces a valid image |
 
+## AI Workflow Capabilities
+
+The platform integrates AI-assisted document processing with fail-safe, replay-safe guarantees:
+
+```mermaid
+flowchart LR
+    doc[Document] --> ocr{PDF/Image?}
+    ocr -->|yes| ocrp[OCR Provider]
+    ocr -->|no| text[Text Content]
+    ocrp --> text
+    text --> extract[Regex Extraction]
+    extract --> enhance{Low confidence?}
+    enhance -->|yes| ai[AI Enhancement]
+    enhance -->|no| validate[Validate]
+    ai --> validate
+    validate --> review{Review needed?}
+    review -->|yes| human[Human Review Queue]
+    review -->|no| route[Route + Complete]
+    human -->|approve| route
+```
+
+| Component | Purpose | Fail-safe behavior |
+|-----------|---------|-------------------|
+| OCR Provider | PDF/image text extraction | Falls back to raw bytes |
+| AI Enhancement | Low-confidence field verification | Uses regex-only extraction |
+| Summarization | Workflow/claim/escalation summaries | Empty summary, workflow continues |
+| Review Routing | Confidence-based human review | Routes to existing escalation model |
+
+All AI operations use mock providers by default (deterministic, content-hash-based). Production providers are swappable via configuration with no code changes.
+
+See [docs/architecture/ai-integration.md](./docs/architecture/ai-integration.md) for detailed diagrams.
+
+## Demo and Walkthrough
+
+| Resource | What it shows |
+|----------|---------------|
+| [Demo Walkthrough](./docs/demo-walkthrough.md) | Step-by-step execution of 7 scenarios with API examples |
+| [Demo Scenarios](./docs/demo-scenarios.md) | Pre-built scenarios with expected outcomes |
+| [Sample Documents](./docs/demo-assets/) | Test claim documents for each scenario |
+| [Screenshots](./docs/screenshots/) | Deployment proof placeholders and capture instructions |
+
+**Quick demo (30 seconds):**
+
+```bash
+# Ingest a claim
+curl -X POST http://localhost:8000/v1/documents \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -F "file=@docs/demo-assets/sample_auto_claim.txt;type=text/plain"
+
+# Start workflow
+curl -X POST http://localhost:8000/v1/workflow-runs \
+  -H "Authorization: Bearer ${TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"workflow_name":"claim_intake","document_ids":["<doc_id>"],"inputs":{}}'
+
+# Verify audit chain
+./scripts/opsctl audit verify --workflow-run-id <run_id>
+# PASS: All events verified
+```
+
 ## Phase History
 
 **Phase 0** — Architecture and design documents. Established canonical vocabulary, lifecycle state machines, domain models, storage contracts, queue contracts, security posture, observability surface, testing shape, deployment topology, risk register, and technical-debt guardrails.
@@ -158,9 +220,11 @@ Every PR runs:
 
 **Phase 2A** — Operational foundation. Migration safety lint, backup/restore runbooks, DLQ tooling, scheduled audit verifier, per-API-key rate limiting.
 
+**Phase 4** — AI workflow integration. Provider abstraction, mock providers, document ingestion pipeline, OCR, AI-enhanced extraction, confidence-based review routing, summarization, execution metadata tracking, 12 new Prometheus metrics.
+
 ## Next Steps
 
 Subsequent phases deliver capabilities described in [PHASED_ROADMAP.md](./PHASED_ROADMAP.md):
 - **Phase 2B**: SLO definitions, load-test harness, PII encryption, staging environment
-- **Phase 3**: Model-backed extractor, operator UI, OIDC/SSO, OTel backend
+- **Phase 3**: Real model-backed extractor, operator UI (HTMX+Jinja), OIDC/SSO, OTel backend
 - **Phase 4+**: Multi-tenant isolation, multi-region posture

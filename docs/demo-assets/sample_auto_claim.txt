@@ -1,0 +1,7 @@
+Claim Number: CLM-2025-007891
+Policy Number: POL-12345678
+Claimant: Sarah Johnson
+Date of Loss: 03/15/2025
+Claim Type: auto
+Description: Rear-end collision on Highway 101 southbound near exit 42.
+Estimated damage: $4,200. No injuries reported. Police report filed.
