@@ -1,0 +1,6 @@
+Claim Number: CLM-2025-BAD001
+Policy Number: INVALID-FORMAT-XYZ
+Claimant: Test User
+Date of Loss: 04/01/2025
+Claim Type: property
+Description: Water damage from burst pipe in basement.

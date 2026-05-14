@@ -1,0 +1,7 @@
+Claim Number: CLM-2025-008234
+Policy Number: POL-98765432
+Claimant: Michael Chen
+Date of Loss: 02/28/2025
+Claim Type: property
+Description: Kitchen fire caused by electrical fault. Fire department responded.
+Structural damage to kitchen and adjacent dining room. Family displaced.
