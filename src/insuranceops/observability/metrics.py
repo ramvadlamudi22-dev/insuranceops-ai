@@ -23,6 +23,12 @@ auth_denials_total = Counter(
     ["reason"],
 )
 
+rate_limit_exceeded_total = Counter(
+    "rate_limit_exceeded_total",
+    "Total requests rejected by rate limiting",
+    ["role"],
+)
+
 workflow_runs_started_total = Counter(
     "workflow_runs_started_total",
     "Total workflow runs started",
