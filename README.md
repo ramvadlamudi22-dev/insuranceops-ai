@@ -61,6 +61,8 @@ See [docs/getting-started.md](./docs/getting-started.md) for the full walkthroug
 | [Architecture Diagrams](./docs/architecture/) | Visual — workflow lifecycle, queue topology, worker architecture, audit chain, AI integration |
 | [Demo Walkthrough](./docs/demo-walkthrough.md) | Live demo — 7 scenarios with API examples and expected outputs |
 | [Demo Scenarios](./docs/demo-scenarios.md) | Pre-built scenarios with sample documents and outcomes |
+| [Deployment Validation](./docs/deployment-validation.md) | Proof of running deployment with startup, workflow, and metrics validation |
+| [Demo Video Guide](./docs/demo-video-guide.md) | 2-minute and 5-minute showcase scripts with recording tips |
 
 ## Design Documents
 
