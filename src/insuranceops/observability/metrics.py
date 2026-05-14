@@ -187,3 +187,93 @@ redis_pool_in_use = Gauge(
     "redis_pool_in_use",
     "Number of Redis connections currently in use",
 )
+
+# ──────────────────────────────────────────────────────────────────────────────
+# AI Workflow Metrics
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Extraction pipeline
+ai_extraction_total = Counter(
+    "ai_extraction_total",
+    "Total AI-assisted extractions executed",
+    ["provider", "outcome"],
+)
+
+ai_extraction_duration_seconds = Histogram(
+    "ai_extraction_duration_seconds",
+    "Duration of AI extraction pipeline in seconds",
+    ["provider"],
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0),
+)
+
+ai_extraction_confidence = Histogram(
+    "ai_extraction_confidence",
+    "Distribution of extraction confidence scores",
+    ["step_name"],
+    buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0),
+)
+
+ai_ocr_duration_seconds = Histogram(
+    "ai_ocr_duration_seconds",
+    "Duration of OCR processing in seconds",
+    ["provider", "content_type"],
+    buckets=(0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+)
+
+ai_ocr_pages_total = Counter(
+    "ai_ocr_pages_total",
+    "Total pages processed by OCR",
+    ["provider"],
+)
+
+# Summarization
+ai_summarization_total = Counter(
+    "ai_summarization_total",
+    "Total summarization operations executed",
+    ["summary_type", "outcome"],
+)
+
+ai_summarization_duration_seconds = Histogram(
+    "ai_summarization_duration_seconds",
+    "Duration of summarization operations in seconds",
+    ["summary_type"],
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+
+# Human review queue
+ai_review_routed_total = Counter(
+    "ai_review_routed_total",
+    "Total items routed to human review",
+    ["reason", "suggested_action"],
+)
+
+ai_review_decisions_total = Counter(
+    "ai_review_decisions_total",
+    "Total review decisions made",
+    ["decision"],
+)
+
+ai_review_queue_depth = Gauge(
+    "ai_review_queue_depth",
+    "Current number of items pending human review",
+)
+
+# Provider-level metrics
+ai_provider_calls_total = Counter(
+    "ai_provider_calls_total",
+    "Total calls to AI providers",
+    ["provider", "operation_type", "outcome"],
+)
+
+ai_provider_tokens_total = Counter(
+    "ai_provider_tokens_total",
+    "Total tokens consumed by AI providers",
+    ["provider", "token_type"],
+)
+
+ai_provider_latency_seconds = Histogram(
+    "ai_provider_latency_seconds",
+    "AI provider response latency in seconds",
+    ["provider", "operation_type"],
+    buckets=(0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+)
