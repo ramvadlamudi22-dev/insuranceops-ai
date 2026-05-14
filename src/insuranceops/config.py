@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     ASSUME_TLS_TERMINATOR: bool = False
     PAYLOAD_STORAGE_PATH: str = "/data/payloads"
 
+    # Scheduled audit verifier
+    AUDIT_VERIFY_INTERVAL_S: int = 3600
+    AUDIT_VERIFY_SAMPLE_SIZE: int = 10
+
     # Rate limiting (per-API-key fixed-window)
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_WINDOW_SECONDS: int = 60
